@@ -12,7 +12,10 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@motionone/solid": "^10.16.4",
     "apexcharts": "^4.4.0",
+    "framer-motion": "^12.4.1",
+    "motion": "^12.4.1",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-dom": "^19.0.0",
