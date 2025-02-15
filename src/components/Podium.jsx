@@ -1,61 +1,50 @@
 import React from "react";
+import ReactApexChart from "react-apexcharts";
 import { motion } from "framer-motion";
-import GoldMedal from "../assets/trophy1.png";
-import SilverMedal from "../assets/trophy2.png";
-import BronzeMedal from "../assets/trophy3.png";
 
+// 🏆 Podium Colors Matching Glow Effects
+const podiumColors = ["#8A2BE2", "#FFD700", "#00BFFF"]
 
-// Podium Styles: Heights, Glows, and Local Icons
-const podiumStyles = [
-    { height: "h-48", glow: "shadow-yellow-500/50", icon: <img src={GoldMedal} alt="Gold Medal" className="h-14 w-14" />, position: "order-2" }, 
-    { height: "h-40", glow: "shadow-blue-500/50", icon: <img src={SilverMedal} alt="Silver Medal" className="h-12 w-12" />, position: "order-1" }, 
-    { height: "h-36", glow: "shadow-purple-500/50", icon: <img src={BronzeMedal} alt="Bronze Medal" className="h-12 w-12" />, position: "order-3" }, // 🥉 3rd (Right)
-];
-
-const Podium = ({ tokens }) => {
+const PodiumPolarChart = ({ tokens }) => {
   // Select Top 3 Tokens by Tweet Count
   const topTokens = [...tokens].sort((a, b) => b.TweetCount - a.TweetCount).slice(0, 3);
 
+  // Chart Data
+  const chartOptions = {
+    chart: {
+      type: "polarArea",
+      animations: { enabled: true },
+      toolbar: { show: false }
+    },
+    labels: topTokens.map(token => token.Token), // Token Names
+    colors: podiumColors,
+    stroke: { width: 1, colors: ["#fff"] }, // White border on segments
+    fill: { opacity: 0.8 },
+    plotOptions: {
+      polarArea: { rings: { strokeWidth: 1 }, spokes: { strokeWidth: 1 } }
+    },
+    legend: {
+      position: "bottom",
+      labels: { colors: "#22C55E", useSeriesColors: true }
+    }
+  };
+
   return (
-    <div className="flex justify-center items-end gap-6 mb-12 relative">
-      
-      {/* Neon Glow Base for Podium */}
-      <div className="absolute bottom-[-10px] w-[90%] h-4 bg-green-500/20 blur-lg rounded-full"></div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
+      className="p-6 rounded-xl bg-[#0A0F0A] border border-green-900/40 backdrop-blur-lg 
+      bg-opacity-90 shadow-[0px_0px_40px_rgba(34,197,94,0.15)] hover:shadow-[0px_0px_60px_rgba(34,197,94,0.3)]
+      transition-all duration-300 max-w-lg mx-auto"
+    >
+      <h2 className="text-xl font-bold text-green-400 text-center mb-2">Talk of the Day</h2>
+        <p className="text-center text-gray-400 text-sm italic mb-12">Based on our filtered tweet system</p>
 
-      <div className="grid grid-cols-3 gap-4 items-end">
-        {topTokens.map((token, index) => (
-          <motion.div
-            key={token.Token}
-            initial={{ opacity: 0, y: 100, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.8, delay: index * 0.3, type: "spring", bounce: 0.4 }}
-            className={`relative flex flex-col items-center justify-center rounded-xl 
-            bg-black/30 ${podiumStyles[index].glow} ${podiumStyles[index].height} 
-            w-32 backdrop-blur-md shadow-lg transition-all duration-300 hover:scale-105 ${podiumStyles[index].position}`}
-          >
-            {/* Token Name (On Top of Box) */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 + index * 0.2 }}
-              className="absolute top-[-28px] px-3 py-1 text-lg font-bold uppercase bg-black/90 border border-green-300 rounded-md shadow-lg"
-            >
-              {token.Token}
-            </motion.p>
-
-            {/* Centered Icon Inside Podium Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.6 + index * 0.2 }}
-            >
-              {podiumStyles[index].icon}
-            </motion.div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
+      {/* ✅ Polar Area Chart */}
+      <ReactApexChart options={chartOptions} series={topTokens.map(token => token.TweetCount)} type="polarArea" height={350} />
+    </motion.div>
   );
 };
 
-export default Podium;
+export default PodiumPolarChart;

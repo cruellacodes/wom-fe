@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ChevronDownIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
+import BubbleChart from "./BubbleChart";
 
 const Leaderboard = ({ tokens, onTokenClick, loading, fetchTokenData }) => {
   const [sortBy, setSortBy] = useState("WomScore");
@@ -141,8 +142,8 @@ const Leaderboard = ({ tokens, onTokenClick, loading, fetchTokenData }) => {
           </tbody>
         </table>
       </div>
+      <BubbleChart/>
     </div>
   );
 };
-
 export default Leaderboard;

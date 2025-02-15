@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
 import TokenInfoCard from "./components/TokenInfoCard";
-import LineChart from "./components/LineChart";
+import TweetScatterChart from "./components/TweetScatterChart";
 import Leaderboard from "./components/LeaderBoard";
 import Podium from "./components/Podium";
+import RadarChart from "./components/RadarChart"
+import PolarChart from "./components/PolarChart"
+import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
 
 // Default WOM token data
 const DEFAULT_WOM_TOKEN = {
@@ -23,6 +26,7 @@ function App() {
   const [displayedTokens, setDisplayedTokens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch Data from Backend
   const fetchTokenData = async () => {
@@ -60,19 +64,46 @@ function App() {
     setSearchedToken(token);
   };
 
+  const topTokens = getTopTokensByTweetCount(displayedTokens, 3);
+  const topTokensByWomScore = getTopTokensByWomScore(displayedTokens, 5);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setDisplayedTokens(tokens);
+    } else {
+      setDisplayedTokens(tokens.filter(token => 
+        token.Token.toLowerCase().includes(searchQuery.toLowerCase())
+      ));
+    }
+  }, [searchQuery, tokens]);
+
+
   return (
     <div className="bg-[#010409] min-h-screen text-gray-300">
       <Header />
 
-      {/* Podium Section */}
-      <div className="w-full mt-12 mb-12"> 
-        <h2 className="text-xl font-bold text-green-400 text-center mb-2">Talk of the Day</h2>
-        <p className="text-center text-gray-400 text-sm italic mb-12">Based on our filtered tweet system</p>
-        <Podium tokens={displayedTokens} />
+      {/* ✅ Podium Section with 2 Charts (Row Layout) */}
+      <div className="max-w-7xl mx-auto px-6 mt-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left Chart (Bubble Chart) */}
+          {/* <div className="w-full">
+            <RadarChart tokens={topTokens}/>
+          </div> */}
+
+          {/* Center (Podium) */}
+          <div className="w-full">
+            <Podium tokens={topTokens} />
+          </div>
+
+          {/* Right Chart (Polar Chart) */}
+          <div className="w-full">
+            <PolarChart tokens={topTokensByWomScore}/>
+          </div>
+        </div>
       </div>
 
-      {/* Fetch Data Button */}
-      <div className="flex justify-center my-6">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between my-6 px-6 gap-4">
+        {/* Fetch Data Button */}
         <button
           onClick={fetchTokenData}
           disabled={loading}
@@ -80,6 +111,15 @@ function App() {
         >
           {loading ? "Fetching Data..." : "Fetch Data"}
         </button>
+
+        {/* Search Bar */}
+        <input
+          type="text"
+          placeholder="Search Tokens..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full md:w-1/3 px-4 py-3 rounded-lg bg-[#050A0A] border border-green-800/40 shadow-lg text-green-300 placeholder-green-500 outline-none focus:ring-2 focus:ring-green-500"
+        />
       </div>
 
       {/* Show Content Only After Data is Fetched */}
@@ -89,7 +129,7 @@ function App() {
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
             {/* Line Chart */}
             <div className="lg:col-span-7">
-              <LineChart searchedToken={searchedToken} />
+              <TweetScatterChart searchedToken={searchedToken} />
             </div>
             
             {/* Token Info Card */}
