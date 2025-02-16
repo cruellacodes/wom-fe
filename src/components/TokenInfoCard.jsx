@@ -31,7 +31,7 @@ const TokenInfoCard = ({ token }) => {
             {token.Token}
           </h2>
           <p className="text-sm text-green-500/80 uppercase tracking-wide">
-            {token.Age}h old | {token.MakerCount} Makers
+            {token.Age} old | {token.MakerCount} Makers
           </p>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { ChevronDownIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
 import BubbleChart from "./BubbleChart";
 
-const Leaderboard = ({ tokens, onTokenClick, loading, fetchTokenData }) => {
+const Leaderboard = ({ tokens, tweets, onTokenClick, loading, fetchTokenData }) => {
   const [sortBy, setSortBy] = useState("WomScore");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -17,8 +17,8 @@ const Leaderboard = ({ tokens, onTokenClick, loading, fetchTokenData }) => {
 
   // Battery Style for WOM Score
   const getBatteryColor = (score) => {
-    if (score >= 65) return "bg-green-500";
-    if (score >= 40) return "bg-yellow-400";
+    if (score >= 49) return "bg-green-500";
+    if (score >= 25) return "bg-yellow-400";
     return "bg-red-500";
   };
 
@@ -101,7 +101,7 @@ const Leaderboard = ({ tokens, onTokenClick, loading, fetchTokenData }) => {
             {sortedTokens.map((token) => (
               <tr 
                 key={token.Token} 
-                onClick={() => onTokenClick(token)} // ✅ Handle Token Click
+                onClick={() => onTokenClick(token)} //Handle Token Click
                 className="border-b border-green-900/40 hover:bg-green-900/30 transition-all duration-300 cursor-pointer"
               >
                 {/* Chain (Solana Icon) */}
@@ -120,8 +120,13 @@ const Leaderboard = ({ tokens, onTokenClick, loading, fetchTokenData }) => {
                       style={{ width: `${token.WomScore}%` }}
                     ></div>
                   </div>
-                  <span className="text-green-400 text-xs font-semibold">{token.WomScore.toFixed(2)}%</span>
+
+                  {/*Apply dynamic color to the score text */}
+                  <span className={`text-xs font-semibold text-white`}>
+                    {token.WomScore.toFixed(2)}%
+                  </span>
                 </td>
+
 
                 {/* Market Cap */}
                 <td className="p-3">{formatNumber(token.MarketCap)}</td>
@@ -142,8 +147,9 @@ const Leaderboard = ({ tokens, onTokenClick, loading, fetchTokenData }) => {
           </tbody>
         </table>
       </div>
-      <BubbleChart/>
+        <BubbleChart tokens={tokens} tweets={tweets} />
     </div>
   );
 };
+
 export default Leaderboard;

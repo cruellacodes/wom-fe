@@ -1,101 +1,109 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import ReactApexChart from "react-apexcharts";
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
 
-// Helper function to generate bubble sizes within a controlled range
-const generateBubbleSize = () => Math.floor(Math.random() * (60 - 10 + 1)) + 10; // Between 10 and 60
-
-// Placeholder function to simulate backend fetching (replace with real API call)
-const fetchBubbleChartData = async () => {
-  return [
-    { Token: "WOM", Tweet: "This token is mooning 🚀", WomScore: 1.8, Time: "2024-02-13T14:30:00Z" },
-    { Token: "ETH", Tweet: "Massive whale just bought in! 🐳", WomScore: 1.2, Time: "2024-02-13T16:45:00Z" },
-    { Token: "BTC", Tweet: "Bitcoin dominance rising again ⚡", WomScore: 0.9, Time: "2024-02-13T18:00:00Z" },
-    { Token: "WOM", Tweet: "This is the next big thing! 🔥", WomScore: 2.0, Time: "2024-02-13T19:15:00Z" }
+const BubbleChart = ({ tokens = [], tweets = [] }) => {  
+  // Define unique colors for each token
+  const tokenColors = [
+    "#FFD700", "#FF5733", "#00FFFF", "#FF00FF", "#22C55E", "#FFA500", "#007BFF", "#FF1493"
   ];
-};
 
-const BubbleChart = () => {
-  const [bubbleData, setBubbleData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Assign a unique color to each token
+  const tokenColorMap = tokens.reduce((acc, token, index) => {
+    acc[token.Token] = tokenColors[index % tokenColors.length];
+    return acc;
+  }, {});
 
-  const loadData = async () => {
-    setLoading(true);
-    const data = await fetchBubbleChartData();
-    setBubbleData(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // ✅ Adjusted bubble sizes similar to working example
-  const chartSeries = [
-    {
-      name: "Tweets",
-      data: bubbleData.map(tweet => ({
-        x: new Date(tweet.Time).getTime(), // Convert Time to Timestamp
-        y: tweet.WomScore,
-        z: generateBubbleSize(), // ✅ Random bubble size between 10-60
-        text: tweet.Tweet
-      }))
-    }
-  ];
+  // Transform data into ApexCharts format
+  const chartData = tokens.map((token) => ({
+    name: token.Token,
+    data: tweets
+      .filter((tweet) => tweet.wom_score > 0 && tweet.token === token.Token)
+      .map((tweet) => ({
+        x: new Date(tweet.created_at).getTime(),
+        y: tweet.wom_score,
+        z: Math.max(10, Math.log1p(tweet.followers_count) * 6),
+        tweetData: tweet, // ✅ Store tweet object for tooltip
+      })),
+  })).filter(series => series.data.length > 0);
 
   const chartOptions = {
     chart: {
       type: "bubble",
-      zoom: { enabled: false },
-      background: "transparent"
+      background: "transparent",
+      toolbar: { show: false },
     },
     xaxis: {
       type: "datetime",
-      tickAmount: 12,
-      labels: { style: { colors: "#22C55E", fontSize: "12px" } }
+      title: { text: "Time (UTC)", style: { color: "#ffffff" } },
+      labels: { style: { colors: "#ffffff" } },
     },
     yaxis: {
+      title: { text: "WOM Score", style: { color: "#ffffff" } },
+      min: 0,
       max: 2,
-      labels: { style: { colors: "#22C55E", fontSize: "12px" } },
-      title: { text: "WOM Score", style: { color: "#22C55E" } }
+      tickAmount: 4,
+      labels: {
+        style: { colors: "#ffffff" },
+        formatter: (value) => value.toFixed(1),
+      },
     },
     tooltip: {
-      custom: ({ seriesIndex, dataPointIndex }) => {
-        const tweet = bubbleData[dataPointIndex];
+      theme: "dark",
+      custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+        const seriesData = w.config.series[seriesIndex]?.data || [];
+        const dataPoint = seriesData[dataPointIndex]; 
+        const tweet = dataPoint?.tweetData;
+
+        if (!tweet) {
+          console.warn("❌ Tooltip Data Missing for Index:", dataPointIndex, seriesData);
+          return `<div class="tooltip-container">No Data</div>`;
+        }
+
         return `
-          <div style="padding:8px; background:#050A0A; border-radius:6px; color:white; font-size:12px;">
-            <strong>${tweet.Token}</strong>
-            <p style="margin-top: 4px; font-size: 12px;">${tweet.Tweet}</p>
-            <span style="font-size: 10px;">WOM Score: ${tweet.WomScore.toFixed(2)}</span>
+          <div style="padding: 10px; background: #050A0A; border-radius: 6px; color: #ffffff; font-size: 12px;">
+            <strong style="color:#22C55E;">${tweet.user_name}</strong>
+            <p style="margin-top: 6px; font-size: 10px; color: #999;">Followers: ${tweet.followers_count}</p>
+            <p style="font-weight: bold; color: ${tokenColorMap[tweet.token]};">WOM Score: ${tweet.wom_score.toFixed(2)}</p>
           </div>
         `;
-      }
+      },
     },
-    colors: ["#8A2BE2"], // Neon Purple for bubbles
+    fill: { opacity: 0.85 },
+    stroke: { show: true, width: 1, colors: ["#ffffff"] },
     dataLabels: { enabled: false },
-    fill: {
-      opacity: 0.8
-    }
+    colors: tokens.map((token) => tokenColorMap[token.Token]),
+    grid: {
+      padding: { left: 10, right: 10 },
+      borderColor: "transparent",
+    },
   };
 
   return (
-    <div className="mt-6">
-      <h2 className="text-lg font-semibold text-green-300 uppercase tracking-wide mb-4">
-        Tweet WOM Score (Last 24H)
-      </h2>
+    <div className="p-6 rounded-xl text-green-300 shadow-lg bg-gradient-to-br from-[#050A0A] via-[#092523] to-[#031715] mt-8">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-green-300 uppercase tracking-wide">
+          Tweet Sentiment Analysis
+        </h2>
+        <p className="text-xs text-gray-400 italic">
+          Bubble size represents <span className="text-green-300 font-bold">followers count</span>
+        </p>
+      </div>
 
-      {/* Refresh Button */}
-      <button
-        onClick={loadData}
-        disabled={loading}
-        className="flex items-center gap-2 px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 hover:scale-105 active:scale-95 mb-6"
-      >
-        <ArrowPathIcon className={`h-5 w-5 ${loading ? "animate-spin" : ""} text-green-300`} />
-        <span className="text-sm font-semibold text-green-300">{loading ? "Refreshing..." : "Refresh"}</span>
-      </button>
-
-      {/* ✅ Bubble Chart */}
-      <ReactApexChart options={chartOptions} series={chartSeries} type="bubble" height={350} />
+      <div className="w-full h-[500px] flex justify-center items-center">
+        {chartData.length > 0 ? (
+          <div className="w-full h-full">
+            <ReactApexChart
+              options={chartOptions}
+              series={chartData}
+              type="bubble"
+              height="100%"
+              width="100%"
+            />
+          </div>
+        ) : (
+          <p className="text-center text-gray-400">No data available.</p>
+        )}
+      </div>
     </div>
   );
 };
