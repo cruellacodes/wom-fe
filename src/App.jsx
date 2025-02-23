@@ -22,13 +22,13 @@ const DEFAULT_WOM_TOKEN = {
 function App() {
   const [searchedToken, setSearchedToken] = useState(DEFAULT_WOM_TOKEN);
   const [tokens, setTokens] = useState([]);
-  const [tweets, setTweets] = useState([]); //Store all tweets here
+  const [tweets, setTweets] = useState([]); //Store all tweets globally
   const [displayedTokens, setDisplayedTokens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  //Fetch Tokens & Tweets in App.jsx
+  //Fetch Tokens from the Backend
   const fetchTokenData = async () => {
     setLoading(true);
     try {
@@ -37,26 +37,23 @@ function App() {
       setTokens(data);
       setDisplayedTokens(data);
 
-      // Set WOM token if it's in the fetched data
       const womToken = data.find((token) => token.Token === "WOM") || DEFAULT_WOM_TOKEN;
       setSearchedToken(womToken);
 
       setHasFetched(true);
       localStorage.setItem("tokens", JSON.stringify(data));
-
       console.log("Tokens fetched successfully.");
-
     } catch (error) {
       console.error("Error fetching token data:", error);
     }
     setLoading(false);
   };
 
-  //Fetch tweets separately when user clicks "Fetch Tweets"
+  //Fetch Tweets for All Tokens
   const fetchTweetsForTokens = async () => {
     setLoading(true);
     try {
-      console.log("📡 Fetching tweets for tokens...");
+      console.log("Fetching tweets for tokens...");
       const tweetPromises = tokens.map(async (token) => {
         const response = await fetch(`http://127.0.0.1:8000/stored-tweets/?token=${token.Token}`);
 
@@ -74,7 +71,6 @@ function App() {
 
       const allTweets = await Promise.all(tweetPromises);
       setTweets(allTweets.flat()); 
-
       console.log("Tweets fetched successfully.");
     } catch (error) {
       console.error("Error fetching tweets:", error);
@@ -82,7 +78,7 @@ function App() {
     setLoading(false);
   };
 
-  // Load Tokens from Local Storage on First Render
+  //Load Tokens from Local Storage on First Render
   useEffect(() => {
     const storedTokens = localStorage.getItem("tokens");
     if (storedTokens) {
@@ -92,7 +88,7 @@ function App() {
     }
   }, []);
 
-  // Handle Token Click
+  //Handle Token Selection
   const handleTokenClick = (token) => {
     setSearchedToken(token);
   };
@@ -114,28 +110,20 @@ function App() {
     <div className="bg-[#010409] min-h-screen text-gray-300">
       <Header />
 
-      {/* Podium Section with 2 Charts (Row Layout) */}
+      {/*Podium & Polar Chart Section */}
       <div className="max-w-7xl mx-auto px-6 mt-12 mb-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Chart (Bubble Chart) */}
-          {/* <div className="w-full">
-            <RadarChart tokens={topTokens}/>
-          </div> */}
-
-          {/* Center (Podium) */}
           <div className="w-full">
             <Podium tokens={topTokens} />
           </div>
-
-          {/* Right Chart (Polar Chart) */}
           <div className="w-full">
-            <PolarChart tokens={topTokensByWomScore} />
+            <PolarChart tokens={topTokensByWomScore}/>
           </div>
         </div>
       </div>
 
+      {/*Search Bar & Fetch Buttons */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between my-6 px-6 gap-4">
-        {/* Fetch Tokens Button */}
         <button
           onClick={fetchTokenData}
           disabled={loading}
@@ -144,7 +132,6 @@ function App() {
           {loading ? "Fetching Tokens..." : "Fetch Tokens"}
         </button>
 
-        {/* Fetch Tweets Button */}
         <button
           onClick={fetchTweetsForTokens}
           disabled={loading || !hasFetched}
@@ -153,7 +140,6 @@ function App() {
           {loading ? "Fetching Tweets..." : "Fetch Tweets"}
         </button>
 
-        {/* Search Bar */}
         <input
           type="text"
           placeholder="Search Tokens..."
@@ -163,23 +149,23 @@ function App() {
         />
       </div>
 
-      {/* Show Content Only After Tokens Are Fetched */}
+      {/*Show Data Only After Tokens Are Fetched */}
       {hasFetched && (
         <div className="max-w-7xl mx-auto p-6 space-y-12">
-          {/* Top Section - Line Chart and Token Info */}
+          {/*Scatter Chart & Token Info Card */}
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-            {/* Line Chart */}
             <div className="lg:col-span-7">
-              <TweetScatterChart searchedToken={searchedToken} />
+              <TweetScatterChart 
+                  searchedToken={searchedToken} 
+                  tweets={tweets.filter(tweet => tweet.token === searchedToken.Token)}
+                />
             </div>
-            
-            {/* Token Info Card */}
             <div className="lg:col-span-3">
               <TokenInfoCard token={searchedToken} />
             </div>
           </div>
 
-          {/* Leaderboard */}
+          {/*Leaderboard */}
           <div className="w-full">
             <Leaderboard 
               tokens={displayedTokens} 

@@ -1,202 +1,187 @@
-import React, { useState, useRef, useEffect } from "react";
-import ReactApexChart from "react-apexcharts";
+import React, { useRef, useEffect } from "react";
+import * as d3 from "d3";
 
-// ✅ Fresh mock data with real profile images
-const mockTweets = [
-  {
-    time: new Date().getTime() - 2 * 60 * 60 * 1000,
-    followers: 12345,
-    profilePic: "https://randomuser.me/api/portraits/men/10.jpg",
-    text: "This token is pumping hard! 🚀"
-  },
-  {
-    time: new Date().getTime() - 5 * 60 * 60 * 1000,
-    followers: 8900,
-    profilePic: "https://randomuser.me/api/portraits/women/20.jpg",
-    text: "Should I buy this dip? 🤔"
-  },
-  {
-    time: new Date().getTime() - 1 * 60 * 60 * 1000,
-    followers: 15200,
-    profilePic: "https://randomuser.me/api/portraits/men/30.jpg",
-    text: "Huge whale just bought 100k tokens! 🔥"
-  },
-  {
-    time: new Date().getTime() - 6 * 60 * 60 * 1000,
-    followers: 6400,
-    profilePic: "https://randomuser.me/api/portraits/women/40.jpg",
-    text: "Token volume just spiked. 🚨"
-  },
-  {
-    time: new Date().getTime() - 3 * 60 * 60 * 1000,
-    followers: 9300,
-    profilePic: "https://randomuser.me/api/portraits/men/50.jpg",
-    text: "What's your price target on this?"
-  }
-];
-
-const TweetScatterChart = () => {
-  const chartRef = useRef(null);
-  const [tooltip, setTooltip] = useState(null);
-  const [imagePositions, setImagePositions] = useState([]);
+const TweetScatterChart = ({ searchedToken, tweets }) => {
+  const svgRef = useRef();
 
   useEffect(() => {
-    const updateImagePositions = () => {
-      if (!chartRef.current) return;
+    // Clear previous content.
+    d3.select(svgRef.current).selectAll("*").remove();
+    d3.select("body").selectAll(".tooltip").remove();
 
-      const chartSvg = chartRef.current.querySelector("svg");
-      if (!chartSvg) return;
+    // Dimensions and margins.
+    const width = 800,
+          height = 400,
+          margin = { top: 20, right: 20, bottom: 50, left: 60 };
 
-      const bbox = chartSvg.getBoundingClientRect();
-      const markers = chartRef.current.querySelectorAll(".apexcharts-series path");
+    // Create SVG container.
+    const svg = d3.select(svgRef.current)
+                  .attr("width", width)
+                  .attr("height", height);
 
-      if (markers.length === 0) return;
+    // Transformation function: maps raw follower counts into a 0–6 scale.
+    function transformFollowers(value) {
+      if (value <= 500) {
+        return value / 500; // [0,500] -> [0,1]
+      } else if (value <= 1000) {
+        return 1 + (value - 500) / 500; // (500,1000] -> [1,2]
+      } else if (value <= 5000) {
+        return 2 + (value - 1000) / 4000; // (1000,5000] -> [2,3]
+      } else if (value <= 10000) {
+        return 3 + (value - 5000) / 5000; // (5000,10000] -> [3,4]
+      } else if (value <= 50000) {
+        return 4 + (value - 10000) / 40000; // (10000,50000] -> [4,5]
+      } else {
+        return 5 + (value - 50000) / 50000; // (50000,100000] -> [5,6]
+      }
+    }
 
-      const positions = [];
-      markers.forEach((marker, index) => {
-        if (!mockTweets[index]) return;
-        const markerBox = marker.getBoundingClientRect();
-        positions.push({
-          x: markerBox.left - bbox.left,
-          y: markerBox.top - bbox.top,
-          tweet: mockTweets[index]
-        });
+    // Process data: parse dates, cap follower counts at 100K, and compute transformed value.
+    const data = tweets.map(tweet => {
+      const originalFollowers = Math.min(tweet.followers_count, 100000);
+      return {
+        date: new Date(tweet.created_at),
+        originalFollowers,
+        transformedFollowers: transformFollowers(originalFollowers),
+        text: tweet.text,
+        username: tweet.user_name,
+        profilePic: tweet.profile_pic ||
+                    "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
+      };
+    });
+
+    // Create x-scale: time scale from tweet dates.
+    const xScale = d3.scaleTime()
+                     .domain(d3.extent(data, d => d.date))
+                     .range([margin.left, width - margin.right]);
+
+    // Create y-scale using the transformed values (0 to 6).
+    const yScale = d3.scaleLinear()
+                     .domain([0, 6])
+                     .range([height - margin.bottom, margin.top]);
+
+    // Define x-axis.
+    const xAxis = d3.axisBottom(xScale)
+                    .ticks(6)
+                    .tickFormat(d3.timeFormat("%H:%M"));
+
+    // Define y-axis with custom tick values and labels.
+    const yTickValues = [0, 1, 2, 3, 4, 5, 6];
+    const yAxis = d3.axisLeft(yScale)
+                    .tickValues(yTickValues)
+                    .tickFormat(d => {
+                      if (d === 0) return "0";
+                      if (d === 1) return "500";
+                      if (d === 2) return "1K";
+                      if (d === 3) return "5K";
+                      if (d === 4) return "10K";
+                      if (d === 5) return "50K";
+                      if (d === 6) return "100K+";
+                      return d;
+                    });
+
+    // Append x-axis.
+    svg.append("g")
+       .attr("transform", `translate(0, ${height - margin.bottom})`)
+       .call(xAxis)
+       .selectAll("text")
+       .style("fill", "#22C55E")
+       .style("font-size", "12px");
+
+    // Append y-axis.
+    svg.append("g")
+       .attr("transform", `translate(${margin.left}, 0)`)
+       .call(yAxis)
+       .selectAll("text")
+       .style("fill", "#22C55E")
+       .style("font-size", "12px");
+
+    // Append y-axis gridlines.
+    svg.append("g")
+       .attr("class", "grid")
+       .attr("transform", `translate(${margin.left}, 0)`)
+       .call(d3.axisLeft(yScale)
+               .tickValues(yTickValues)
+               .tickSize(-width + margin.left + margin.right)
+               .tickFormat(""))
+       .selectAll("line")
+       .attr("stroke", "rgba(34,197,94,0.5)")
+       .attr("stroke-dasharray", "2");
+
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "#0A0F0A")             
+      .style("border", "1px solid #22C55E")         
+      .style("color", "#fff")                       
+      .style("padding", "8px 12px")
+      .style("border-radius", "6px")                
+      .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.6)")
+      .style("font-size", "13px")
+      .style("pointer-events", "none")
+      .style("opacity", 0)
+      .style("transition", "opacity 0.2s ease-in-out")
+      .style("max-width", "300px")
+      .style("white-space", "normal");
+
+
+    // Create a defs container for patterns.
+    const defs = svg.append("defs");
+
+    // For each data point, create a unique pattern.
+    data.forEach((d, i) => {
+      defs.append("pattern")
+          .attr("id", `pattern-${i}`)
+          .attr("patternUnits", "objectBoundingBox")
+          .attr("width", 1)
+          .attr("height", 1)
+          .append("image")
+          .attr("href", d.profilePic)
+          .attr("width", 30)
+          .attr("height", 30)
+          .attr("preserveAspectRatio", "xMidYMid slice");
+    });
+
+    // Draw circles filled with the corresponding pattern.
+    svg.selectAll("circle.data-point")
+       .data(data)
+       .enter()
+       .append("circle")
+       .attr("class", "data-point")
+       .attr("cx", d => xScale(d.date))
+       .attr("cy", d => yScale(d.transformedFollowers))
+       .attr("r", 15) // Larger circle (30x30 equivalent)
+       .style("fill", (d, i) => `url(#pattern-${i})`)
+       .attr("stroke", "#22C55E")
+       .attr("stroke-width", 2)
+       .on("mouseover", (event, d) => {
+        tooltip.transition().duration(200).style("opacity", 1);
+        tooltip.html(
+          `<div style="font-weight: bold; color: #22C55E;">@${d.username}</div>
+           <hr style="border: none; border-top: 1px solid #22C55E; margin: 4px 6px;">
+           <div style="color: #fff;">${d.text}</div>
+           <div style="font-style: italic; color: #ccc; margin-top: 4px;">Followers: ${d.originalFollowers.toLocaleString()}</div>`
+        )
+        .style("left", event.pageX + 10 + "px")
+        .style("top", event.pageY - 28 + "px");
+      })
+      .on("mousemove", (event) => {
+        tooltip.style("left", event.pageX + 10 + "px")
+               .style("top", event.pageY - 28 + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.transition().duration(100).style("opacity", 0);
       });
-
-      setImagePositions(positions);
-    };
-
-    setTimeout(updateImagePositions, 500);
-  }, []);
+      
+  }, [tweets]);
 
   return (
-    <div ref={chartRef} className="relative p-6 rounded-xl bg-[#0A0F0A] border border-green-900/40 
-      backdrop-blur-lg bg-opacity-90 shadow-[0px_0px_40px_rgba(34,197,94,0.15)]
-      hover:shadow-[0px_0px_60px_rgba(34,197,94,0.3)] transition-all duration-300"
-    >
-      <h2 className="text-xl font-bold text-green-300 mb-4">Recent Tweets on {mockTweets[0].text.split(" ")[2]}</h2>
-
-      {/* Render Chart */}
-      <ReactApexChart
-        options={{
-          chart: {
-            type: "scatter",
-            height: 350,
-            animations: { enabled: false },
-            zoom: { enabled: false },
-            toolbar: { show: false },
-            background: "transparent"
-          },
-          colors: ["transparent"], // Hide default markers
-          xaxis: {
-            type: "datetime",
-            labels: {
-              datetimeUTC: false,
-              style: { colors: "#22C55E", fontSize: "12px", fontFamily: "Inter, sans-serif" }
-            }
-          },
-          yaxis: {
-            title: { text: "Followers", style: { color: "#22C55E", fontSize: "14px" } },
-            labels: {
-              formatter: val => val.toLocaleString(),
-              style: { colors: "#22C55E", fontSize: "12px", fontFamily: "Inter, sans-serif" }
-            }
-          },
-          markers: { size: 0 }, // Remove default markers
-          grid: {
-            borderColor: "rgba(34, 197, 94, 0.2)",
-            strokeDashArray: 4
-          },
-          legend: { show: false }
-        }}
-        series={[
-          {
-            name: "Tweets",
-            data: mockTweets.map(tweet => [tweet.time, tweet.followers])
-          }
-        ]}
-        type="scatter"
-        height={350}
-      />
-
-      {/* ✅ Render Images at Data Points (Inside the Chart) */}
-      {imagePositions.length > 0 &&
-        imagePositions.map(({ x, y, tweet }, index) => (
-          <div
-            key={index}
-            className="absolute"
-            style={{
-              left: x,
-              top: y,
-              transform: "translate(-50%, -50%)",
-              width: "24px", // ✅ Smaller images for data points
-              height: "24px",
-              borderRadius: "50%",
-              overflow: "hidden",
-              border: "2px solid #22C55E",
-              cursor: "pointer"
-            }}
-            onMouseEnter={e =>
-              setTooltip({
-                x: x,
-                y: y - 80, // Offset above image
-                lineY: 350, // Align to x-axis
-                text: tweet.text,
-                profilePic: tweet.profilePic
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-          >
-            <img src={tweet.profilePic} width="24" height="24" style={{ borderRadius: "50%" }} />
-          </div>
-        ))}
-
-      {/* ✅ Tooltip & Dashed Line */}
-      {tooltip && (
-        <>
-          {/* Dashed Line to X-Axis */}
-          <svg
-            className="absolute"
-            width="1"
-            height={tooltip.lineY - tooltip.y}
-            style={{
-              left: tooltip.x + "px",
-              top: tooltip.y + 20 + "px",
-              zIndex: 9999,
-              pointerEvents: "none"
-            }}
-          >
-            <line
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="100%"
-              stroke="rgba(255,255,255,0.5)"
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
-            />
-          </svg>
-
-          {/* Tooltip Box (Rounded Corners, Dark Theme) */}
-          <div
-            className="absolute bg-black text-white p-2 rounded-lg border border-gray-700 shadow-lg flex items-center gap-3"
-            style={{
-              left: tooltip.x - 50 + "px",
-              top: tooltip.y + "px",
-              padding: "6px 12px",
-              borderRadius: "8px", // ✅ Rounded corners
-              fontSize: "12px",
-              lineHeight: "1.4",
-              zIndex: 99999,
-              maxWidth: "220px",
-              whiteSpace: "normal"
-            }}
-          >
-            <img src={tooltip.profilePic} className="w-6 h-6 rounded-full border border-gray-500" />
-            <span>{tooltip.text}</span>
-          </div>
-        </>
-      )}
+    <div className="relative p-6 rounded-xl bg-[#0A0F0A] border border-green-900/40">
+      <h2 className="text-xl font-bold text-green-300 mb-4">
+        Recent Tweets for {searchedToken.Token}
+      </h2>
+      <svg ref={svgRef}></svg>
     </div>
   );
 };
