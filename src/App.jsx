@@ -6,6 +6,7 @@ import Leaderboard from "./components/LeaderBoard";
 import Podium from "./components/Podium";
 import RadarChart from "./components/RadarChart";
 import PolarChart from "./components/PolarChart";
+import Footer from "./components/Footer";
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
 
 const DEFAULT_WOM_TOKEN = {
@@ -22,7 +23,7 @@ const DEFAULT_WOM_TOKEN = {
 function App() {
   const [searchedToken, setSearchedToken] = useState(DEFAULT_WOM_TOKEN);
   const [tokens, setTokens] = useState([]);
-  const [tweets, setTweets] = useState([]); //Store all tweets globally
+  const [tweets, setTweets] = useState([]); 
   const [displayedTokens, setDisplayedTokens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
@@ -114,6 +115,9 @@ function App() {
       <div className="max-w-7xl mx-auto px-6 mt-12 mb-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="w-full">
+            <RadarChart tokens={topTokens}/>
+          </div>
+          <div className="w-full">
             <Podium tokens={topTokens} />
           </div>
           <div className="w-full">
@@ -122,32 +126,35 @@ function App() {
         </div>
       </div>
 
-      {/*Search Bar & Fetch Buttons */}
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between my-6 px-6 gap-4">
-        <button
-          onClick={fetchTokenData}
-          disabled={loading}
-          className="flex items-center gap-2 px-6 py-3 rounded-lg bg-green-600 shadow-lg text-white font-semibold hover:bg-green-700 transition-all duration-300 hover:scale-105 active:scale-95"
-        >
-          {loading ? "Fetching Tokens..." : "Fetch Tokens"}
-        </button>
-
-        <button
-          onClick={fetchTweetsForTokens}
-          disabled={loading || !hasFetched}
-          className="flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-600 shadow-lg text-white font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 active:scale-95"
-        >
-          {loading ? "Fetching Tweets..." : "Fetch Tweets"}
-        </button>
-
-        <input
-          type="text"
-          placeholder="Search Tokens..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full md:w-1/3 px-4 py-3 rounded-lg bg-[#050A0A] border border-green-800/40 shadow-lg text-green-300 placeholder-green-500 outline-none focus:ring-2 focus:ring-green-500"
-        />
+      {/* Fetch Buttons & Search Bar */}
+      <div className="max-w-7xl mx-auto my-6 px-6 gap-4 flex flex-col">
+        <div className="flex flex-row gap-4 justify-start">
+          <button
+            onClick={fetchTokenData}
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-green-600 shadow-lg text-white font-semibold hover:bg-green-700 transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            {loading ? "Fetching Tokens..." : "Fetch Tokens"}
+          </button>
+          <button
+            onClick={fetchTweetsForTokens}
+            disabled={loading || !hasFetched}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-600 shadow-lg text-white font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            {loading ? "Fetching Tweets..." : "Fetch Tweets"}
+          </button>
+        </div>
+        <div className="mt-4">
+          <input
+            type="text"
+            placeholder="Search Tokens..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-[#050A0A] border border-green-800/40 shadow-lg text-green-300 placeholder-green-500 outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
       </div>
+
 
       {/*Show Data Only After Tokens Are Fetched */}
       {hasFetched && (
@@ -177,6 +184,7 @@ function App() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 }

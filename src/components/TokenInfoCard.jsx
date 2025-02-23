@@ -4,8 +4,8 @@ import solanaIcon from "../assets/solana.png"
 
 // Utility function for setting score color
 const getScoreColor = (score) => {
-  if (score >= 75) return "bg-green-500";
-  if (score >= 50) return "bg-yellow-400";
+  if (score >= 49) return "bg-green-500";
+  if (score >= 25) return "bg-yellow-400";
   return "bg-red-500";
 };
 
@@ -31,7 +31,7 @@ const TokenInfoCard = ({ token }) => {
             {token.Token}
           </h2>
           <p className="text-sm text-green-500/80 uppercase tracking-wide">
-            {token.Age} old | {token.MakerCount} Makers
+            {token.Age}h old | {token.MakerCount} Makers
           </p>
         </div>
       </div>
