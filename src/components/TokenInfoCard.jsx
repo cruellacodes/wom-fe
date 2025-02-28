@@ -65,9 +65,8 @@ const TokenInfoCard = ({ token }) => {
           <p className="text-lg font-semibold text-green-300">${token.Liquidity.toLocaleString()}</p>
         </div>
         <div className="p-3 rounded-lg bg-green-900/10 border border-green-800/30 shadow-sm">
-          <p className="text-green-500/80 text-xs">1h Volume</p>
-          {/** to add 1h volume */}
-          <p className="text-lg font-semibold text-green-300">{token.MakerCount.toLocaleString()}</p>
+          <p className="text-green-500/80 text-xs">1h Price Change</p>
+          <p className="text-lg font-semibold text-green-300">{token.priceChange1h}</p>
         </div>
       </div>
     </motion.div>

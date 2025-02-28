@@ -20,13 +20,15 @@ const Header = () => {
         </button>
       </div>
 
-      {/* Center - Live Indicator & Search Bar */}
+      {/* Center - Live Indicator */}
       <div className="relative flex items-center gap-6 w-[40%] justify-center">
         {/* Live Button with Heartbeat */}
         <div className="relative flex items-center gap-2 px-6 py-2 rounded-lg bg-green-900/20 shadow-lg text-sm font-semibold text-green-300 uppercase tracking-wide hover:scale-105 active:scale-95 transition duration-300">
           <span className="relative z-10">Live</span>
           <span className="relative flex items-center">
-            <span className="relative w-3 h-3 bg-green-500 rounded-full shadow-lg animate-heartbeat"></span>
+          <span className="relative w-2 h-2 bg-green-500 rounded-full">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75 animate-ping"></span>
+          </span>
           </span>
         </div>
 

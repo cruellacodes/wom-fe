@@ -5,19 +5,21 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
   const svgRef = useRef();
 
   useEffect(() => {
-    // Clear previous content.
-    d3.select(svgRef.current).selectAll("*").remove();
-    d3.select("body").selectAll(".tooltip").remove();
-
-    // Dimensions and margins.
+    // Fixed dimensions for the design
     const width = 800,
           height = 400,
           margin = { top: 20, right: 20, bottom: 50, left: 60 };
 
-    // Create SVG container.
+    // Clear previous content.
+    d3.select(svgRef.current).selectAll("*").remove();
+    d3.select("body").selectAll(".tooltip").remove();
+
+    // Create SVG container with viewBox for responsiveness.
     const svg = d3.select(svgRef.current)
-                  .attr("width", width)
-                  .attr("height", height);
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .style("width", "100%")
+      .style("height", "auto");
 
     // Transformation function: maps raw follower counts into a 0–6 scale.
     function transformFollowers(value) {

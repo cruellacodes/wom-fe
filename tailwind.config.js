@@ -14,6 +14,15 @@ export default {
       boxShadow: {
         'terminal': '0 4px 6px -1px rgba(0, 255, 0, 0.1), 0 2px 4px -1px rgba(0, 255, 0, 0.06)',
       },
+      keyframes: {
+        heartbeat: {
+          '0%, 100%': { transform: 'scale(1)', opacity: 1 },
+          '50%': { transform: 'scale(1.3)', opacity: 0.7 },
+        },
+      },
+      animation: {
+        heartbeat: 'heartbeat 1.5s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

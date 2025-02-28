@@ -2,7 +2,7 @@ import React from "react";
 import ReactApexChart from "react-apexcharts";
 import { motion } from "framer-motion";
 
-// 🏆 Podium Colors Matching Glow Effects
+// Podium Colors Matching Glow Effects
 const podiumColors = ["#8A2BE2", "#FFD700", "#00BFFF"]
 
 const PodiumPolarChart = ({ tokens }) => {
@@ -41,7 +41,7 @@ const PodiumPolarChart = ({ tokens }) => {
       <h2 className="text-xl font-bold text-green-400 text-center mb-2">Talk of the Day</h2>
         <p className="text-center text-gray-400 text-sm italic mb-12">Based on our filtered tweet system</p>
 
-      {/* ✅ Polar Area Chart */}
+      {/* Polar Area Chart */}
       <ReactApexChart options={chartOptions} series={topTokens.map(token => token.TweetCount)} type="polarArea" height={350} />
     </motion.div>
   );
