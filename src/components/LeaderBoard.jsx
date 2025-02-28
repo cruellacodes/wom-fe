@@ -67,7 +67,7 @@ const Leaderboard = ({ tokens, tweets, onTokenClick }) => {
           <thead>
             <tr className="bg-[#06100A] text-green-300 text-xs tracking-wide">
               <th className="p-3">CHAIN</th>
-              {["Token", "WomScore", "MarketCap", "Age", "Volume", "MakerCount", "Liquidity"].map((key) => (
+              {["Token", "WomScore", "MarketCap", "Age(h)", "Volume", "MakerCount", "Liquidity"].map((key) => (
                 <th
                   key={key}
                   className="p-3 cursor-pointer hover:text-green-400 transition duration-200"

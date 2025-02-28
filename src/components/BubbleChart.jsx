@@ -22,7 +22,7 @@ const BubbleChart = ({ tokens = [], tweets = [] }) => {
         x: new Date(tweet.created_at).getTime(),
         y: tweet.wom_score,
         z: Math.max(10, Math.log1p(tweet.followers_count) * 6),
-        tweetData: tweet, // ✅ Store tweet object for tooltip
+        tweetData: tweet, 
       })),
   })).filter(series => series.data.length > 0);
 
@@ -31,19 +31,25 @@ const BubbleChart = ({ tokens = [], tweets = [] }) => {
       type: "bubble",
       background: "transparent",
       toolbar: { show: false },
+      animations: {
+        enabled: true,
+        easing: "easeinout",
+        speed: 800,
+      },
     },
     xaxis: {
       type: "datetime",
-      title: { text: "Time (UTC)", style: { color: "#ffffff" } },
-      labels: { style: { colors: "#ffffff" } },
+      title: { text: "Time (UTC)", style: { color: "#ffffff", fontSize: "14px" } },
+      labels: { style: { colors: "#A3A3A3", fontSize: "12px" } },
+      axisBorder: { color: "#333333" },
     },
     yaxis: {
-      title: { text: "WOM Score", style: { color: "#ffffff" } },
+      title: { text: "WOM Score", style: { color: "#ffffff", fontSize: "14px" } },
       min: 0,
       max: 2,
       tickAmount: 4,
       labels: {
-        style: { colors: "#ffffff" },
+        style: { colors: "#A3A3A3", fontSize: "12px" },
         formatter: (value) => value.toFixed(1),
       },
     },
@@ -55,14 +61,15 @@ const BubbleChart = ({ tokens = [], tweets = [] }) => {
         const tweet = dataPoint?.tweetData;
 
         if (!tweet) {
-          console.warn("❌ Tooltip Data Missing for Index:", dataPointIndex, seriesData);
+          console.warn("Tooltip Data Missing for Index:", dataPointIndex, seriesData);
           return `<div class="tooltip-container">No Data</div>`;
         }
 
         return `
-          <div style="padding: 10px; background: #050A0A; border-radius: 6px; color: #ffffff; font-size: 12px;">
+          <div style="padding: 10px; background: #101417; border-radius: 8px; color: #ffffff; font-size: 12px;
+          box-shadow: 0px 0px 10px rgba(34,197,94,0.3);">
             <strong style="color:#22C55E;">${tweet.user_name}</strong>
-            <p style="margin-top: 6px; font-size: 10px; color: #999;">Followers: ${tweet.followers_count}</p>
+            <p style="margin-top: 6px; font-size: 10px; color: #bbb;">Followers: ${tweet.followers_count}</p>
             <p style="font-weight: bold; color: ${tokenColorMap[tweet.token]};">WOM Score: ${tweet.wom_score.toFixed(2)}</p>
           </div>
         `;
@@ -70,18 +77,23 @@ const BubbleChart = ({ tokens = [], tweets = [] }) => {
     },
     fill: { opacity: 0.85 },
     stroke: { show: true, width: 1, colors: ["#ffffff"] },
+    grid: {
+      borderColor: "#222222",
+      xaxis: { lines: { show: true } },
+      yaxis: { lines: { show: true } },
+      padding: { left: 10, right: 10 },
+    },
     dataLabels: { enabled: false },
     colors: tokens.map((token) => tokenColorMap[token.Token]),
-    grid: {
-      padding: { left: 10, right: 10 },
-      borderColor: "transparent",
-    },
   };
 
   return (
-    <div className="p-6 rounded-xl text-green-300 shadow-lg bg-gradient-to-br from-[#050A0A] via-[#092523] to-[#031715] mt-8">
+    <div className="p-6 rounded-xl text-green-300 shadow-lg bg-gradient-to-br from-[#101417] via-[#092523] to-[#031715] 
+      border border-green-800/40 backdrop-blur-md mt-8">
+      
+      {/* Title Section */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-semibold text-green-300 uppercase tracking-wide">
+        <h2 className="text-lg font-semibold text-green-400 uppercase tracking-wide">
           Tweet Sentiment Analysis
         </h2>
         <p className="text-xs text-gray-400 italic">
@@ -89,6 +101,7 @@ const BubbleChart = ({ tokens = [], tweets = [] }) => {
         </p>
       </div>
 
+      {/* Chart Container */}
       <div className="w-full h-[500px] flex justify-center items-center">
         {chartData.length > 0 ? (
           <div className="w-full h-full">

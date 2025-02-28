@@ -66,7 +66,9 @@ const TokenInfoCard = ({ token }) => {
         </div>
         <div className="p-3 rounded-lg bg-green-900/10 border border-green-800/30 shadow-sm">
           <p className="text-green-500/80 text-xs">1h Price Change</p>
-          <p className="text-lg font-semibold text-green-300">{token.priceChange1h}</p>
+          <p className={`text-lg font-semibold ${token.priceChange1h >= 0 ? "text-green-300" : "text-red-400"}`}>
+            {token.priceChange1h !== undefined ? `${(token.priceChange1h * 100).toFixed(2)}%` : "N/A"}
+          </p>
         </div>
       </div>
     </motion.div>

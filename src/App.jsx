@@ -147,8 +147,8 @@ function App() {
       </div>
 
       {/* Search Bar */}
-      <div className="max-w-7xl mx-auto my-6 px-6 gap-4 flex flex-col">
-        <div className="mt-4">
+      <div className="max-w-7xl mx-auto my-6 px-6 gap-4 flex flex-col" ref={tokenInfoRef}>
+        <div className="mt-4 ">
           <input
             type="text"
             placeholder="Search Tokens..."
@@ -164,7 +164,7 @@ function App() {
         <div className="max-w-7xl mx-auto p-6 space-y-12">
           
           {/* Scatter Chart & Token Info Card Section */}
-          <div id="token-info" ref={tokenInfoRef} className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+          <div id="token-info" className="grid grid-cols-1 lg:grid-cols-10 gap-6">
             <div className="lg:col-span-7">
               <TweetScatterChart 
                 searchedToken={searchedToken} 
