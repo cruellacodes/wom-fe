@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
 import BubbleChart from "./BubbleChart";
+import { AiOutlineLineChart } from "react-icons/ai";
 
 const Leaderboard = ({ tokens, tweets, onTokenClick }) => {
   const [sortBy, setSortBy] = useState("WomScore");
@@ -89,14 +90,17 @@ const Leaderboard = ({ tokens, tweets, onTokenClick }) => {
                   <img src={solanaIcon} alt="Solana" className="w-8 h-8" />
                 </td>
                 <td className="p-3 font-semibold text-white">
-                  <a 
-                    href={token.dex_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="hover:text-green-400 hover:underline transition-all duration-200"
-                  >
+                  <span className="inline-flex items-center gap-1">
                     {token.Token.toUpperCase()}
-                  </a>
+                    <a 
+                      href={token.dex_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="hover:text-green-400 transition-all duration-200"
+                    >
+                      <AiOutlineLineChart className="w-4 h-4 text-gray-400 hover:text-green-400 transition-all duration-200" />
+                    </a>
+                  </span>
                 </td>
                 <td className="p-3 flex items-center gap-2">
                   <div className="relative w-16 h-6 bg-gray-800 rounded-md flex items-center px-1 border border-gray-500">

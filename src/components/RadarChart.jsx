@@ -21,15 +21,9 @@ const RadarChart = ({ tokens }) => {
             return res.json();
           })
           .then(data => {
-            // Here, data.tweet_volume is an object like:
-            // {"Hour -6":0, "Hour -5":0, "Hour -4":2, "Hour -3":3, "Hour -2":3, "Hour -1":4}
             const volumeObj = data.tweet_volume;
-            // Map the categories to an array of numbers, defaulting to 0 if missing.
             const volume = categories.map(cat => volumeObj[cat] !== undefined ? volumeObj[cat] : 0);
-            return {
-              name: token.Token,
-              data: volume
-            };
+            return { name: token.Token, data: volume };
           })
           .catch(err => {
             console.error(err);
@@ -49,7 +43,7 @@ const RadarChart = ({ tokens }) => {
   }, [tokens]);
 
   const chartOptions = {
-    chart: { type: "radar", background: "transparent" },
+    chart: { type: "radar", background: "transparent", toolbar: { show: false } },
     xaxis: { categories, labels: { style: { colors: "#22C55E", fontSize: "12px" } } },
     yaxis: { labels: { style: { colors: "#22C55E", fontSize: "12px" } } },
     stroke: { width: 2 },
@@ -59,15 +53,19 @@ const RadarChart = ({ tokens }) => {
     colors: ["#8A2BE2", "#22C55E", "#FFA500"],
   };
 
-  if (loading) return <div>Loading Radar Chart...</div>;
   if (seriesData.length === 0) return <div>No tweet volume data available.</div>;
 
   return (
-    <div className="w-full p-6 bg-[#050A0A] border border-green-800/40 rounded-lg shadow-lg">
-      <h2 className="text-lg font-semibold text-green-300 uppercase tracking-wide mb-4">
+    <div className="p-3 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
+      bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto"
+    >
+      <h2 className="text-sm font-semibold text-green-300 text-center mb-1">
         Tweet Volume (Last 6H)
       </h2>
-      <ReactApexChart options={chartOptions} series={seriesData} type="radar" height={350} />
+
+      <div className="w-[90%] mx-auto">
+        <ReactApexChart options={chartOptions} series={seriesData} type="radar" height={220} />
+      </div>
     </div>
   );
 };

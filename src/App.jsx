@@ -107,7 +107,6 @@ function App() {
     
     window.location.hash = "#token-info";
 
-    // Smoothly scroll to the TokenInfo section
     setTimeout(() => {
       tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
@@ -131,19 +130,15 @@ function App() {
     <div className="bg-[#010409] min-h-screen text-gray-300">
       <Header />
 
-      {/* Podium & Polar Chart Section */}
-      <div className="max-w-7xl mx-auto px-6 mt-12 mb-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="w-full">
+      <div className="max-w-7xl mx-auto px-2 mt-1 mb-2">
+          
+          {/* Charts Container */}
+          <div className="grid grid-cols-3 gap-4 items-center justify-items-center h-full">
             <RadarChart tokens={topTokens} />
-          </div>
-          <div className="w-full">
             <Podium tokens={topTokens} />
-          </div>
-          <div className="w-full">
             <PolarChart tokens={topTokensByWomScore} />
           </div>
-        </div>
+
       </div>
 
       {/* Search Bar */}
