@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Search } from "lucide-react";
 import Header from "./components/Header";
 import TokenInfoCard from "./components/TokenInfoCard";
 import TweetScatterChart from "./components/TweetScatterChart";
@@ -130,29 +131,39 @@ function App() {
     <div className="bg-[#010409] min-h-screen text-gray-300">
       <Header />
 
-      <div className="max-w-7xl mx-auto px-2 mt-1 mb-2">
-          
-          {/* Charts Container */}
-          <div className="grid grid-cols-3 gap-4 items-center justify-items-center h-full">
+      {/* Podium & Polar Chart Section */}
+      <div className="max-w-7xl mx-auto px-6 mt-8 mb-8">
+        <div className="flex flex-col md:flex-row gap-4"> 
+          <div className="flex-1">
             <RadarChart tokens={topTokens} />
+          </div>
+          <div className="flex-1">
             <Podium tokens={topTokens} />
+          </div>
+          <div className="flex-1">
             <PolarChart tokens={topTokensByWomScore} />
           </div>
-
-      </div>
-
-      {/* Search Bar */}
-      <div className="max-w-7xl mx-auto my-6 px-6 gap-4 flex flex-col" ref={tokenInfoRef}>
-        <div className="mt-4 ">
-          <input
-            type="text"
-            placeholder="Search Tokens..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[#050A0A] border border-green-800/40 shadow-lg text-green-300 placeholder-green-500 outline-none focus:ring-2 focus:ring-green-500"
-          />
         </div>
       </div>
+
+
+      {/* Search Bar */}
+      <div className="w-full max-w-3xl mx-auto mb-4 px-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search tokens..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#0A0F0A] border border-green-800/30 
+            shadow-sm text-green-300 placeholder-green-500 outline-none transition-all 
+            focus:border-green-400 focus:ring-0"
+          />
+          {/* Search Icon */}
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+        </div>
+      </div>
+
 
       {/* Show Data Only After Tokens Are Fetched */}
       {hasFetched && (

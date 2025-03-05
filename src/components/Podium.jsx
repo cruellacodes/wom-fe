@@ -36,13 +36,13 @@ const PodiumPolarChart = ({ tokens }) => {
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
-      className="p-3 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
+      className="p-2 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
       bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto"
     >
-      <h2 className="text-sm font-semibold text-green-300 text-center mb-1">
+      <h2 className="text-s font-semibold text-green-300 text-center mb-1">
         Talk of the Day
       </h2>
-      <p className="text-center text-gray-400 text-xs italic mb-4">
+      <p className="text-center text-gray-400 text-xs italic mb-2">
         Based on our filtered tweet system
       </p>
   
@@ -51,12 +51,11 @@ const PodiumPolarChart = ({ tokens }) => {
           options={chartOptions}
           series={topTokens.map((token) => token.TweetCount)}
           type="polarArea"
-          height={220}
+          height={230} 
         />
       </div>
     </motion.div>
   );
-  
 };
 
 export default PodiumPolarChart;

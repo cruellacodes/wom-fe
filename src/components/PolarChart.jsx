@@ -49,19 +49,18 @@ const PolarChart = ({ tokens }) => {
   };
 
   return (
-    <div className="p-3 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
+    <div className="p-2 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
       bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto"
     >
-      <h2 className="text-sm font-semibold text-green-300 text-center mb-1">
+      <h2 className="text-s font-semibold text-green-300 text-center mb-1">
         Top 5 WOM Score Tokens
       </h2>
   
       <div className="w-[90%] mx-auto">
-        <ReactApexChart options={chartOptions} series={tokenSeries} type="polarArea" height={220} />
+        <ReactApexChart options={chartOptions} series={tokenSeries} type="polarArea" height={255} /> 
       </div>
     </div>
   );
-  
 };
 
 export default PolarChart;
