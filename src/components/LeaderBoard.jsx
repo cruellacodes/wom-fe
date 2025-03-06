@@ -1,12 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
 import BubbleChart from "./BubbleChart";
 import { AiOutlineLineChart } from "react-icons/ai";
 
-const Leaderboard = ({ tokens, tweets, onTokenClick }) => {
+const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) => {
   const [sortBy, setSortBy] = useState("WomScore");
   const [sortOrder, setSortOrder] = useState(-1); // -1: descending, 1: ascending
+  const bubbleChartRef = useRef(null);
+
+  useEffect(() => {
+    if (setScrollToBubbleChart) {
+      setScrollToBubbleChart(() => () => {
+        if (bubbleChartRef.current) {
+          bubbleChartRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+  }, [setScrollToBubbleChart]);
 
   // Format large numbers
   const formatNumber = (num) => {
@@ -123,7 +134,9 @@ const Leaderboard = ({ tokens, tweets, onTokenClick }) => {
           </tbody>
         </table>
       </div>
-      <BubbleChart tokens={tokens} tweets={tweets} />
+      <div ref={bubbleChartRef}>
+        <BubbleChart tokens={tokens} tweets={tweets} />
+      </div>
     </div>
   );
 };

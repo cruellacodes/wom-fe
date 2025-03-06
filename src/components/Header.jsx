@@ -2,7 +2,7 @@ import { Bars3Icon, XMarkIcon, BoltIcon } from "@heroicons/react/24/solid";
 import React, { useState } from "react";
 import Logo from "../assets/logo.png";
 
-const Header = () => {
+const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -31,13 +31,19 @@ const Header = () => {
       <div className="flex items-center gap-4">
         {/* Desktop Buttons */}
         <div className="hidden md:flex gap-4">
-          <button className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95">
-            <span className="text-sm text-green-300">Leaderboard</span>
-          </button>
+        <button 
+          className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
+          onClick={onScrollToLeaderboard}
+        >
+          <span className="text-sm text-green-300">Leaderboard</span>
+        </button>
 
-          <button className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95">
-            <span className="text-sm text-green-300">Sentiment</span>
-          </button>
+        <button 
+          className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
+          onClick={scrollToBubbleChart}
+        >
+          <span className="text-sm text-green-300">Sentiment</span>
+        </button>
         </div>
 
         {/* Mobile Menu Button */}
@@ -58,12 +64,18 @@ const Header = () => {
         <div className="absolute top-16 right-6 w-48 bg-black bg-opacity-95 shadow-lg rounded-lg md:hidden">
           <ul className="flex flex-col">
             <li>
-              <button className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300">
+              <button 
+                className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
+                onClick={onScrollToLeaderboard}
+              >
                 Leaderboard
               </button>
             </li>
             <li>
-              <button className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300">
+              <button 
+                className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
+                onClick={onScrollToBubbleChart}  
+              >
                 Sentiment
               </button>
             </li>

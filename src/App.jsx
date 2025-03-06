@@ -31,13 +31,23 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const tokenInfoRef = useRef(null);
+  const leaderboardRef = useRef(null);
+
+  const scrollToLeaderboard = () => {
+    setTimeout(() => {
+      leaderboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+  
+  const [scrollToBubbleChart, setScrollToBubbleChart] = useState(() => () => {}); 
 
   useEffect(() => {
     localStorage.removeItem("tokens");
   }, []);
 
-  // Fetch Tokens from Backend
-  const fetchTokenData = async () => {
+
+  // Function to fetch all tokens data (runs every 60s)
+  const fetchAllTokensData = async () => {
     setLoading(true);
     try {
       const response = await fetch("http://127.0.0.1:8000/tokens");
@@ -49,9 +59,6 @@ function App() {
       if (Array.isArray(data) && data.length > 0) {
         setTokens(data);
         setDisplayedTokens(data);
-
-        const womToken = data.find((token) => token.Token === "WOM") || DEFAULT_WOM_TOKEN;
-        setSearchedToken(womToken);
         setHasFetched(true);
       } else {
         console.error("Invalid token data received:", data);
@@ -61,6 +68,16 @@ function App() {
     }
     setLoading(false);
   };
+
+  // Fetch tokens every 60s except searched token
+  useEffect(() => {
+    fetchAllTokensData();
+    const intervalId = setInterval(() => {
+      fetchAllTokensData();
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, []);
+
 
   // Fetch Tweets for Tokens (Runs only if tokens exist)
   useEffect(() => {
@@ -93,21 +110,9 @@ function App() {
     fetchTweetsForTokens();
   }, [tokens]);
 
-  // Auto-fetch tokens every 60 seconds
-  useEffect(() => {
-    fetchTokenData();
-    const intervalId = setInterval(() => {
-      fetchTokenData();
-    }, 60000);
-    return () => clearInterval(intervalId);
-  }, []);
-
   // Handle Token Click & Scroll to Token Info
   const handleTokenClick = (token) => {
     setSearchedToken(token);
-    
-    window.location.hash = "#token-info";
-
     setTimeout(() => {
       tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
@@ -160,7 +165,10 @@ function App() {
 
   return (
     <div className="bg-[#010409] min-h-screen text-gray-300">
-      <Header />
+      <Header 
+        onScrollToLeaderboard={scrollToLeaderboard} 
+        scrollToBubbleChart={scrollToBubbleChart} 
+      />
 
       {/* Podium & Polar Chart Section */}
       <div className="max-w-7xl mx-auto px-6 mt-8 mb-8">
@@ -179,8 +187,8 @@ function App() {
 
 
       {/* Search Bar */}
-      <div className="w-full max-w-3xl mx-auto mb-4 px-4">
-        <div className="relative #token-info">
+      <div ref={tokenInfoRef} id="token-info" className="w-full max-w-3xl mx-auto mb-4 px-4">
+        <div className="relative">
         <input
           type="text"
           placeholder="Enter token address..."
@@ -220,12 +228,13 @@ function App() {
           </div>
 
           {/* Leaderboard */}
-          <div className="w-full">
+          <div ref={leaderboardRef} className="w-full">
             <Leaderboard 
               tokens={displayedTokens} 
               tweets={tweets}
               onTokenClick={handleTokenClick}
               loading={loading} 
+              setScrollToBubbleChart={setScrollToBubbleChart}
             />
           </div>
         </div>
