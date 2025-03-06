@@ -67,9 +67,12 @@ const RadarChart = ({ tokens }) => {
     yaxis: { 
       labels: { style: { colors: "#ffffff", fontSize: "10px" } } 
     },
-    stroke: { width: 2, colors: ["#FFFFFF"] }, 
-    fill: { opacity: 0.7, colors: ["#8A2BE2", "#FFD700", "#00BFFF"] }, 
-    markers: { size: 4, colors: ["#FFFFFF"] }, 
+    stroke: { 
+      width: 2, 
+      colors: ["#8A2BE2", "#FFD700", "#00BFFF"],
+    }, 
+    fill: { opacity: 0.3 }, 
+    markers: { size: 4 }, 
     legend: { 
       labels: { colors: ["#8A2BE2", "#FFD700", "#00BFFF"], fontSize: "10px" },  
       position: "bottom",
@@ -88,9 +91,8 @@ const RadarChart = ({ tokens }) => {
       borderColor: "rgba(255,255,255,0.2)",  
       opacity: 0.8,  
     },
-    colors: ["#8A2BE2", "#FFD700", "#00BFFF"], 
+    colors: ["#8A2BE2", "#FFD700", "#00BFFF"],
   };
-  
 
   if (seriesData.length === 0) return <div>No tweet volume data available.</div>;
 
