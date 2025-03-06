@@ -74,7 +74,7 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
             <li>
               <button 
                 className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
-                onClick={onScrollToBubbleChart}  
+                onClick={scrollToBubbleChart}
               >
                 Sentiment
               </button>
