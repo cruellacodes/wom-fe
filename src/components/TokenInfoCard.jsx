@@ -1,6 +1,6 @@
 import React from "react";
-import { motion } from "framer-motion";
 import solanaIcon from "../assets/solana.png";
+import { AiOutlineLineChart } from "react-icons/ai";
 
 // Utility function for setting score color with glow effect
 const getScoreColor = (score) => {
@@ -16,6 +16,18 @@ const TokenInfoCard = ({ token }) => {
       backdrop-blur-lg bg-opacity-90 shadow-md transition-all duration-300
       hover:border-green-400/60 hover:shadow-[0_0_15px_rgba(34,197,94,0.6)]"
     >
+      {/* Dex Screener Chart Icon (Top-Right) */}
+      <div className="absolute top-3 right-3">
+        <a
+          href={token.dex_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-green-400 hover:text-green-300 transition"
+        >
+          <AiOutlineLineChart size={20} />
+        </a>
+      </div>
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <img
@@ -49,7 +61,7 @@ const TokenInfoCard = ({ token }) => {
           { label: "Liquidity", value: `$${token.Liquidity.toLocaleString()}` },
           {
             label: "1h Change",
-            value: `${(token.priceChange1h * 100).toFixed(2)}%`,
+            value: `${(token.priceChange1h ?? 0).toFixed(2)}%`,      
             className: token.priceChange1h >= 0 ? "text-green-300" : "text-red-400",
           },
         ].map((item, index) => (

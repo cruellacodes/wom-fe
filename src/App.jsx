@@ -113,16 +113,47 @@ function App() {
     }, 100);
   };
 
-  // Handle Search Filtering
-  useEffect(() => {
-    if (!searchQuery) {
-      setDisplayedTokens(tokens);
-    } else {
-      setDisplayedTokens(
-        tokens.filter((token) => token.Token && token.Token.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+  const handleSearch = async () => {
+    if (!searchQuery) return;
+  
+    setLoading(true);
+    try {
+      const chainId = "solana"; 
+      const response = await fetch(`http://127.0.0.1:8000/search-token/${chainId}/${searchQuery}`);
+  
+      if (!response.ok) throw new Error("Token not found or API error");
+  
+      const tokenData = await response.json();
+      console.log("Fetched Token Data:", tokenData);
+  
+      setSearchedToken({
+        Token: tokenData.symbol,  
+        Age: tokenData.ageHours || "N/A", 
+        MarketCap: tokenData.marketCap || 0,  
+        Volume: tokenData.volume24h || 0,  
+        Liquidity: tokenData.liquidity || 0,  
+        priceUsd: tokenData.priceUsd || "N/A",  
+        dex_url: tokenData.dexUrl || "#",  
+        chainIcon: "/assets/solana-icon.png",  
+        priceChange1h: tokenData.priceChange1h || 0,   
+        WomScore: 20,   
+      });
+      
+  
+      // Scroll to Token Info Card
+      window.location.hash = "#token-info";
+      setTimeout(() => {
+        tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+  
+      setHasFetched(true);
+    } catch (error) {
+      console.error("Error fetching token:", error);
+      alert("Token not found");
     }
-  }, [searchQuery, tokens]);
+    setLoading(false);
+  };  
+  
 
   const topTokens = getTopTokensByTweetCount(displayedTokens, 3);
   const topTokensByWomScore = getTopTokensByWomScore(displayedTokens, 5);
@@ -149,16 +180,22 @@ function App() {
 
       {/* Search Bar */}
       <div className="w-full max-w-3xl mx-auto mb-4 px-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search tokens..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#0A0F0A] border border-green-800/30 
-            shadow-sm text-green-300 placeholder-green-500 outline-none transition-all 
-            focus:border-green-400 focus:ring-0"
-          />
+        <div className="relative #token-info">
+        <input
+          type="text"
+          placeholder="Enter token address..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
+          className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#0A0F0A] border border-green-800/30 
+          shadow-sm text-green-300 placeholder-green-500 outline-none transition-all 
+          focus:border-green-400 focus:ring-0"
+        />
+
           {/* Search Icon */}
           <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
         </div>
