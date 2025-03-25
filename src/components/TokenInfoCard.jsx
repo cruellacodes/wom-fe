@@ -42,16 +42,37 @@ const TokenInfoCard = ({ token }) => {
       </div>
 
       {/* WOM Score */}
-      <div className="mb-4">
-        <p className="text-xs text-green-400">WOM Score</p>
-        <div className="relative w-full h-2 rounded-full bg-green-900/20 overflow-hidden mt-1">
-          <div
-            className={`absolute top-0 left-0 h-full ${getScoreColor(token.WomScore)}`}
-            style={{ width: `${token.WomScore}%` }}
-          ></div>
+      <div className="mb-4 relative group">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-green-400 flex items-center gap-1">
+            WOM SCORE
+            <span className="text-green-400 cursor-help border-b border-dotted border-green-400 text-[10px]">
+              ?
+            </span>
+          </p>
+
+          {/* Tooltip */}
+          <div className="absolute top-5 left-24 z-10 hidden group-hover:block bg-[#0A0F0A] text-[11px] text-white p-2 rounded-md shadow-md w-52 border border-green-400">
+            WOM (Word-of-Mouth) Score shows how much social buzz this token has on Twitter.
+          </div>
         </div>
-        <p className="text-xs text-green-400 mt-1">{token.WomScore}/100</p>
+
+        <div className="relative w-full h-2 rounded-full bg-green-900/20 overflow-hidden mt-1">
+          {token.WomScore === "Calculating..." ? (
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-green-400 via-green-200 to-green-400 animate-pulse" />
+          ) : (
+            <div
+              className={`absolute top-0 left-0 h-full ${getScoreColor(token.WomScore)}`}
+              style={{ width: `${token.WomScore}%` }}
+            ></div>
+          )}
+        </div>
+
+        <p className="text-xs text-green-400 mt-1">
+          {token.WomScore === "Calculating..." ? "Analyzing tweets..." : `${token.WomScore}/100`}
+        </p>
       </div>
+
 
       {/* Market Data */}
       <div className="grid grid-cols-2 gap-3 text-xs">

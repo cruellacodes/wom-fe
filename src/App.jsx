@@ -29,6 +29,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingTweets, setLoadingTweets] = useState(false);
+  const [storedTweets, setStoredTweets] = useState([]);
+  const [freshTweets, setFreshTweets] = useState([]);
+
 
   const tokenInfoRef = useRef(null);
   const leaderboardRef = useRef(null);
@@ -79,85 +83,106 @@ function App() {
   }, []);
 
 
-  // Fetch Tweets for Tokens (Runs only if tokens exist)
   useEffect(() => {
     if (tokens.length === 0) return;
-
+  
     const fetchTweetsForTokens = async () => {
       setLoading(true);
       try {
-        console.log("Fetching tweets for tokens...");
         const tweetPromises = tokens.map(async (token) => {
           if (!token.Token) return [];
+  
           const response = await fetch(`http://127.0.0.1:8000/stored-tweets/?token=${token.Token}`);
-          if (!response.ok) {
-            console.error(`Failed to fetch tweets for ${token.Token}:`, response.statusText);
-            return [];
-          }
           const data = await response.json();
-          return (data.tweets || []).map((tweet) => ({ ...tweet, token: token.Token }));
+  
+          return data.tweets?.map((tweet) => ({
+            ...tweet,
+            token: token.Token,
+          })) || [];
         });
-
+  
         const allTweets = await Promise.all(tweetPromises);
-        setTweets(allTweets.flat());
-        console.log("Tweets fetched successfully.");
+        setStoredTweets(allTweets.flat());
       } catch (error) {
         console.error("Error fetching tweets:", error);
+        setStoredTweets([]);
       }
       setLoading(false);
     };
-
+  
     fetchTweetsForTokens();
-  }, [tokens]);
+  }, [tokens]);    
 
   // Handle Token Click & Scroll to Token Info
   const handleTokenClick = (token) => {
+    setLoadingTweets(false);
+    setSearchQuery("");
     setSearchedToken(token);
     setTimeout(() => {
       tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
+  
 
   const handleSearch = async () => {
     if (!searchQuery) return;
   
     setLoading(true);
     try {
-      const chainId = "solana"; 
+      const chainId = "solana";
       const response = await fetch(`http://127.0.0.1:8000/search-token/${chainId}/${searchQuery}`);
-  
       if (!response.ok) throw new Error("Token not found or API error");
   
       const tokenData = await response.json();
       console.log("Fetched Token Data:", tokenData);
   
+      // Show token info immediately with placeholder WOM score
       setSearchedToken({
-        Token: tokenData.symbol,  
-        Age: tokenData.ageHours || "N/A", 
-        MarketCap: tokenData.marketCap || 0,  
-        Volume: tokenData.volume24h || 0,  
-        Liquidity: tokenData.liquidity || 0,  
-        priceUsd: tokenData.priceUsd || "N/A",  
-        dex_url: tokenData.dexUrl || "#",  
-        chainIcon: "/assets/solana-icon.png",  
-        priceChange1h: tokenData.priceChange1h || 0,   
-        WomScore: 20,   
+        Token: tokenData.symbol,
+        Age: tokenData.ageHours || "N/A",
+        MarketCap: tokenData.marketCap || 0,
+        Volume: tokenData.volume24h || 0,
+        Liquidity: tokenData.liquidity || 0,
+        priceUsd: tokenData.priceUsd || "N/A",
+        dex_url: tokenData.dexUrl || "#",
+        chainIcon: "/assets/solana-icon.png",
+        priceChange1h: tokenData.priceChange1h || 0,
+        WomScore: "Calculating...",
       });
-      
   
-      // Scroll to Token Info Card
-      window.location.hash = "#token-info";
-      setTimeout(() => {
-        tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
+      setHasFetched(true); 
   
-      setHasFetched(true);
+      setLoadingTweets(true);
+
+      const tweetsResponse = await fetch(`http://127.0.0.1:8000/tweets/${tokenData.symbol}`);
+      const freshTweetsData = await tweetsResponse.json();
+      console.log("Fetched Fresh Tweets:", freshTweetsData);
+
+      setSearchedToken(prev => ({
+        ...prev,
+        WomScore: freshTweetsData.wom_score || "N/A"
+      }));
+  
+      if (freshTweetsData && freshTweetsData.tweets) {
+        const enrichedTweets = freshTweetsData.tweets.map((tweet) => ({
+          ...tweet,
+          token: freshTweetsData.token,
+        }));
+        setFreshTweets(enrichedTweets);
+      } else {
+        setTweets([]);
+      }
+  
+      setLoadingTweets(false); 
     } catch (error) {
       console.error("Error fetching token:", error);
       alert("Token not found");
+      setLoading(false);
+      setLoadingTweets(false);
     }
     setLoading(false);
   };  
+
   
 
   const topTokens = getTopTokensByTweetCount(displayedTokens, 3);
@@ -193,7 +218,18 @@ function App() {
           type="text"
           placeholder="Enter token address..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            if (e.target.value.trim() === "") {
+              // Reset state if search is cleared
+              setSearchedToken(DEFAULT_WOM_TOKEN);
+              setHasFetched(true);
+              const womTweets = tweets.filter(tweet => tweet.token === "WOM");
+              setTweets(womTweets);
+            }
+          }}
+          
           onKeyPress={(e) => {
             if (e.key === "Enter") {
               handleSearch();
@@ -206,6 +242,21 @@ function App() {
 
           {/* Search Icon */}
           <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSearchedToken(DEFAULT_WOM_TOKEN);
+                setHasFetched(true);
+                const womTweets = tweets.filter(tweet => tweet.token === "WOM");
+                setTweets(womTweets);
+              }}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-sm hover:text-green-300"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
@@ -216,12 +267,25 @@ function App() {
           
           {/* Scatter Chart & Token Info Card Section */}
           <div id="token-info" className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-            <div className="lg:col-span-7">
+            <div className="lg:col-span-7 relative">
+              {loadingTweets && (
+                <div className="absolute inset-0 z-10 bg-[#0A0F0A]/90 flex items-center justify-center rounded-lg">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 border-4 border-green-400 border-dashed rounded-full animate-spin"></div>
+                    <p className="text-green-300 text-sm mt-2 animate-pulse">Analyzing tweets...</p>
+                  </div>
+                </div>
+              )}
+              
               <TweetScatterChart 
                 searchedToken={searchedToken} 
-                tweets={tweets.filter((tweet) => tweet.token === searchedToken.Token)}
+                tweets={[
+                  ...storedTweets.filter(tweet => tweet.token === searchedToken.Token),
+                  ...freshTweets.filter(tweet => tweet.token === searchedToken.Token)
+                ]}
               />
             </div>
+
             <div className="lg:col-span-3">
               <TokenInfoCard token={searchedToken} />
             </div>
