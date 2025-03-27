@@ -10,7 +10,7 @@ const PolarChart = ({ tokens }) => {
     chart: {
       type: "polarArea",
       background: "transparent",
-      toolbar: { show: false }, // 🔥 Removes the burger menu (export options)
+      toolbar: { show: false }, 
     },
     labels: tokenLabels,
     fill: {

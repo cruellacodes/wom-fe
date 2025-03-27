@@ -1,9 +1,11 @@
 import { Bars3Icon, XMarkIcon, BoltIcon } from "@heroicons/react/24/solid";
 import React, { useState } from "react";
 import Logo from "../assets/logo.png";
+import { useNavigate } from "react-router-dom"
 
 const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate()
 
   return (
     <header className="relative flex items-center justify-between px-6 py-4 text-green-300 shadow-lg backdrop-blur-xl bg-opacity-95 bg-black">
@@ -31,19 +33,25 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
       <div className="flex items-center gap-4">
         {/* Desktop Buttons */}
         <div className="hidden md:flex gap-4">
-        <button 
-          className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
-          onClick={onScrollToLeaderboard}
-        >
-          <span className="text-sm text-green-300">Leaderboard</span>
-        </button>
+          <button
+            className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
+            onClick={() => navigate("/about")}
+          >
+            <span className="text-sm text-green-300">How it works</span>
+          </button>
+          <button 
+            className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
+            onClick={onScrollToLeaderboard}
+          >
+            <span className="text-sm text-green-300">Leaderboard</span>
+          </button>
 
-        <button 
-          className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
-          onClick={scrollToBubbleChart}
-        >
-          <span className="text-sm text-green-300">Sentiment</span>
-        </button>
+          <button 
+            className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
+            onClick={scrollToBubbleChart}
+          >
+            <span className="text-sm text-green-300">Sentiment</span>
+          </button>
         </div>
 
         {/* Mobile Menu Button */}

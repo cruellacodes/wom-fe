@@ -9,6 +9,8 @@ import RadarChart from "./components/RadarChart";
 import PolarChart from "./components/PolarChart";
 import Footer from "./components/Footer";
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
+import { Routes, Route } from "react-router-dom"
+import About from "./components/About"
 
 const DEFAULT_WOM_TOKEN = {
   Token: "WOM",
@@ -189,122 +191,130 @@ function App() {
   const topTokensByWomScore = getTopTokensByWomScore(displayedTokens, 5);
 
   return (
-    <div className="bg-[#010409] min-h-screen text-gray-300">
-      <Header 
-        onScrollToLeaderboard={scrollToLeaderboard} 
-        scrollToBubbleChart={scrollToBubbleChart} 
-      />
+    <Routes>
+    <Route
+      path="/"
+      element={
+        <div className="bg-[#010409] min-h-screen text-gray-300">
+          <Header 
+            onScrollToLeaderboard={scrollToLeaderboard} 
+            scrollToBubbleChart={scrollToBubbleChart} 
+          />
 
-      {/* Podium & Polar Chart Section */}
-      <div className="max-w-7xl mx-auto px-6 mt-8 mb-8">
-        <div className="flex flex-col md:flex-row gap-4"> 
-          <div className="flex-1">
-            <RadarChart tokens={topTokens} />
+          {/* Podium & Polar Chart Section */}
+          <div className="max-w-7xl mx-auto px-6 mt-8 mb-8">
+            <div className="flex flex-col md:flex-row gap-4"> 
+              <div className="flex-1">
+                <RadarChart tokens={topTokens} />
+              </div>
+              <div className="flex-1">
+                <Podium tokens={topTokens} />
+              </div>
+              <div className="flex-1">
+                <PolarChart tokens={topTokensByWomScore} />
+              </div>
+            </div>
           </div>
-          <div className="flex-1">
-            <Podium tokens={topTokens} />
-          </div>
-          <div className="flex-1">
-            <PolarChart tokens={topTokensByWomScore} />
-          </div>
-        </div>
-      </div>
 
 
-      {/* Search Bar */}
-      <div ref={tokenInfoRef} id="token-info" className="w-full max-w-3xl mx-auto mb-4 px-4">
-        <div className="relative">
-        <input
-          type="text"
-          placeholder="Enter token address..."
-          value={searchQuery}
-          
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            if (e.target.value.trim() === "") {
-              // Reset state if search is cleared
-              setSearchedToken(DEFAULT_WOM_TOKEN);
-              setHasFetched(true);
-              const womTweets = tweets.filter(tweet => tweet.token === "WOM");
-              setTweets(womTweets);
-            }
-          }}
-          
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              handleSearch();
-            }
-          }}
-          className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#0A0F0A] border border-green-800/30 
-          shadow-sm text-green-300 placeholder-green-500 outline-none transition-all 
-          focus:border-green-400 focus:ring-0"
-        />
-
-          {/* Search Icon */}
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
-
-          {searchQuery && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSearchedToken(DEFAULT_WOM_TOKEN);
-                setHasFetched(true);
-                const womTweets = tweets.filter(tweet => tweet.token === "WOM");
-                setTweets(womTweets);
-              }}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-sm hover:text-green-300"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
-
-
-      {/* Show Data Only After Tokens Are Fetched */}
-      {hasFetched && (
-        <div className="max-w-7xl mx-auto p-6 space-y-12">
-          
-          {/* Scatter Chart & Token Info Card Section */}
-          <div id="token-info" className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-            <div className="lg:col-span-7 relative">
-              {loadingTweets && (
-                <div className="absolute inset-0 z-10 bg-[#0A0F0A]/90 flex items-center justify-center rounded-lg">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 border-4 border-green-400 border-dashed rounded-full animate-spin"></div>
-                    <p className="text-green-300 text-sm mt-2 animate-pulse">Analyzing tweets...</p>
-                  </div>
-                </div>
-              )}
+          {/* Search Bar */}
+          <div ref={tokenInfoRef} id="token-info" className="w-full max-w-3xl mx-auto mb-4 px-4">
+            <div className="relative">
+            <input
+              type="text"
+              placeholder="Enter token address..."
+              value={searchQuery}
               
-              <TweetScatterChart 
-                searchedToken={searchedToken} 
-                tweets={[
-                  ...storedTweets.filter(tweet => tweet.token === searchedToken.Token),
-                  ...freshTweets.filter(tweet => tweet.token === searchedToken.Token)
-                ]}
-              />
-            </div>
-
-            <div className="lg:col-span-3">
-              <TokenInfoCard token={searchedToken} />
-            </div>
-          </div>
-
-          {/* Leaderboard */}
-          <div ref={leaderboardRef} className="w-full">
-            <Leaderboard 
-              tokens={displayedTokens} 
-              tweets={tweets}
-              onTokenClick={handleTokenClick}
-              loading={loading} 
-              setScrollToBubbleChart={setScrollToBubbleChart}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value.trim() === "") {
+                  // Reset state if search is cleared
+                  setSearchedToken(DEFAULT_WOM_TOKEN);
+                  setHasFetched(true);
+                  const womTweets = tweets.filter(tweet => tweet.token === "WOM");
+                  setTweets(womTweets);
+                }
+              }}
+          
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                }
+              }}
+              className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#0A0F0A] border border-green-800/30 
+              shadow-sm text-green-300 placeholder-green-500 outline-none transition-all 
+              focus:border-green-400 focus:ring-0"
             />
+
+              {/* Search Icon */}
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSearchedToken(DEFAULT_WOM_TOKEN);
+                    setHasFetched(true);
+                    const womTweets = tweets.filter(tweet => tweet.token === "WOM");
+                    setTweets(womTweets);
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-sm hover:text-green-300"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
+
+
+          {/* Show Data Only After Tokens Are Fetched */}
+          {hasFetched && (
+            <div className="max-w-7xl mx-auto p-6 space-y-12">
+              
+              {/* Scatter Chart & Token Info Card Section */}
+              <div id="token-info" className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+                <div className="lg:col-span-7 relative">
+                  {loadingTweets && (
+                    <div className="absolute inset-0 z-10 bg-[#0A0F0A]/90 flex items-center justify-center rounded-lg">
+                      <div className="flex flex-col items-center">
+                        <div className="w-10 h-10 border-4 border-green-400 border-dashed rounded-full animate-spin"></div>
+                        <p className="text-green-300 text-sm mt-2 animate-pulse">Analyzing tweets...</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <TweetScatterChart 
+                    searchedToken={searchedToken} 
+                    tweets={[
+                      ...storedTweets.filter(tweet => tweet.token === searchedToken.Token),
+                      ...freshTweets.filter(tweet => tweet.token === searchedToken.Token)
+                    ]}
+                  />
+                </div>
+
+                <div className="lg:col-span-3">
+                  <TokenInfoCard token={searchedToken} />
+                </div>
+              </div>
+
+              {/* Leaderboard */}
+              <div ref={leaderboardRef} className="w-full">
+                <Leaderboard 
+                  tokens={displayedTokens} 
+                  tweets={tweets}
+                  onTokenClick={handleTokenClick}
+                  loading={loading} 
+                  setScrollToBubbleChart={setScrollToBubbleChart}
+                />
+              </div>
+            </div>
+          )}
+          <Footer />
         </div>
-      )}
-      <Footer />
-    </div>
+        }
+        />
+        <Route path="/about" element={<About />} />
+      </Routes>
   );
 }
 
