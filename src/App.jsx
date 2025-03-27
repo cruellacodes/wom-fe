@@ -54,7 +54,7 @@ function App() {
   const fetchAllTokensData = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://127.0.0.1:8000/tokens");
+      const response = await fetch(`${process.env.BACKEND_URL}/tokens`);
       if (!response.ok) throw new Error("Failed to fetch tokens");
 
       const data = await response.json();
@@ -92,7 +92,7 @@ function App() {
         const tweetPromises = tokens.map(async (token) => {
           if (!token.Token) return [];
   
-          const response = await fetch(`http://127.0.0.1:8000/stored-tweets/?token=${token.Token}`);
+          const response = await fetch(`${process.env.BACKEND_URL}/stored-tweets/?token=${token.Token}`);
           const data = await response.json();
   
           return data.tweets?.map((tweet) => ({
@@ -130,7 +130,7 @@ function App() {
     setLoading(true);
     try {
       const chainId = "solana";
-      const response = await fetch(`http://127.0.0.1:8000/search-token/${chainId}/${searchQuery}`);
+      const response = await fetch(`${process.env.BACKEND_URL}/search-token/${chainId}/${searchQuery}`);
       if (!response.ok) throw new Error("Token not found or API error");
   
       const tokenData = await response.json();
@@ -154,7 +154,7 @@ function App() {
   
       setLoadingTweets(true);
 
-      const tweetsResponse = await fetch(`http://127.0.0.1:8000/tweets/${tokenData.symbol}`);
+      const tweetsResponse = await fetch(`${process.env.BACKEND_URL}/tweets/${tokenData.symbol}`);
       const freshTweetsData = await tweetsResponse.json();
       console.log("Fetched Fresh Tweets:", freshTweetsData);
 
