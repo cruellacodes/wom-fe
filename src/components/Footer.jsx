@@ -27,9 +27,9 @@ const Footer = () => {
         <div className="flex flex-col md:items-end items-start gap-6 justify-between h-full">
           <ul className="flex flex-wrap gap-6 text-sm">
             {[
-              { label: "Docs", path: "/docs" },
+              { label: "Docs", path: "https://github.com/cruellacodes/wom/blob/main/README.md" },
               { label: "Premium", path: "/premium" },
-              { label: "WOM Score", path: "https://github.com/YOUR_HANDLE/README.md" },
+              { label: "WOM Score", path: "https://github.com/cruellacodes/wom/blob/main/wom/cryptoBertPaper.md" },
               { label: "Contact", path: "/contact" },
             ].map(({ label, path }, i) => (
               <li key={i}>
@@ -47,9 +47,9 @@ const Footer = () => {
 
           <div className="flex gap-4">
             {[
-              { icon: <SiX className="w-5 h-5" />, link: "https://x.com/YOUR_HANDLE" },
+              { icon: <SiX className="w-5 h-5" />, link: "https://x.com/wordofmouth_ai" },
               { icon: <FaTelegramPlane className="w-5 h-5" />, link: "https://t.me/YOUR_HANDLE" },
-              { icon: <FaGithub className="w-5 h-5" />, link: "https://github.com/YOUR_HANDLE" },
+              { icon: <FaGithub className="w-5 h-5" />, link: "https://github.com/cruellacodes" },
             ].map(({ icon, link }, idx) => (
               <a
                 key={idx}
