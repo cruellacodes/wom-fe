@@ -1,23 +1,31 @@
 import { Bars3Icon, XMarkIcon, BoltIcon } from "@heroicons/react/24/solid";
 import React, { useState } from "react";
 import Logo from "../assets/logo.png";
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 
 const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
+  const handleScrollRedirect = (target) => {
+    navigate("/", { state: { scrollTo: target } });
+    setMenuOpen(false); // close mobile menu
+  };
 
   return (
-    <header className="relative flex items-center justify-between px-6 py-4 text-green-300 shadow-lg backdrop-blur-xl bg-opacity-95 bg-black">
+    <header className="relative flex items-center justify-between px-6 py-4 text-green-300 shadow-xl backdrop-blur-xl bg-black/80 border-b border-green-800/20">
       
-      {/* Left Side - Bigger Logo */}
-      <div className="flex items-center">
-        <img src={Logo} alt="Logo" className="w-30 h-30 object-contain" />
+      {/* Left Side - Clickable Logo */}
+      <div
+        className="flex items-center cursor-pointer transition hover:opacity-90"
+        onClick={() => navigate("/")}
+      >
+        <img src={Logo} alt="Logo" className="w-28 h-28 object-contain" />
       </div>
 
-      {/* Center - Live Indicator (Smaller, No Border) */}
+      {/* Center - Live Indicator */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
-        <div className="flex items-center gap-2 px-5 py-1.5 rounded-lg bg-green-900/20 shadow-lg text-sm font-semibold text-green-300 uppercase tracking-wide 
+        <div className="flex items-center gap-2 px-5 py-1.5 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 border border-green-500/10 shadow-xl text-sm font-semibold text-green-300 uppercase tracking-wide 
           hover:scale-110 active:scale-95 transition duration-300 animate-pulse">
           <BoltIcon className="w-4 h-4 text-yellow-300 animate-spin-slow" />
           <span className="text-base font-bold text-yellow-300">LIVE</span>
@@ -29,32 +37,34 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
         </div>
       </div>
 
-      {/* Right Side - Navigation & Mobile Menu */}
+      {/* Right Side - Desktop & Mobile Nav */}
       <div className="flex items-center gap-4">
+
         {/* Desktop Buttons */}
         <div className="hidden md:flex gap-4">
           <button
-            className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
+            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
             onClick={() => navigate("/about")}
           >
             <span className="text-sm text-green-300">How it works</span>
           </button>
-          <button 
-            className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
-            onClick={onScrollToLeaderboard}
+
+          <button
+            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
+            onClick={() => handleScrollRedirect("leaderboard")}
           >
             <span className="text-sm text-green-300">Leaderboard</span>
           </button>
 
-          <button 
-            className="px-6 py-2 rounded-lg bg-green-900/20 shadow-lg hover:bg-green-800/40 transition duration-300 flex items-center hover:scale-110 active:scale-95"
-            onClick={scrollToBubbleChart}
+          <button
+            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
+            onClick={() => handleScrollRedirect("sentiment")}
           >
             <span className="text-sm text-green-300">Sentiment</span>
           </button>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu Toggle */}
         <button
           className="block md:hidden p-2 bg-green-900/20 rounded-lg hover:bg-green-800/40 transition duration-300"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -69,28 +79,38 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
 
       {/* Mobile Dropdown Menu */}
       {menuOpen && (
-        <div className="absolute top-16 right-6 w-48 bg-black bg-opacity-95 shadow-lg rounded-lg md:hidden">
+        <div className="absolute top-16 right-6 w-52 bg-gradient-to-br from-black/90 to-green-900/20 backdrop-blur-lg border border-green-700/20 shadow-2xl rounded-lg md:hidden transition-all duration-300 ease-in-out">
           <ul className="flex flex-col">
             <li>
-              <button 
+              <button
                 className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
-                onClick={onScrollToLeaderboard}
+                onClick={() => handleScrollRedirect("leaderboard")}
               >
                 Leaderboard
               </button>
             </li>
             <li>
-              <button 
+              <button
                 className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
-                onClick={scrollToBubbleChart}
+                onClick={() => handleScrollRedirect("sentiment")}
               >
                 Sentiment
+              </button>
+            </li>
+            <li>
+              <button
+                className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/about");
+                }}
+              >
+                How it works
               </button>
             </li>
           </ul>
         </div>
       )}
-      
     </header>
   );
 };
