@@ -9,8 +9,9 @@ import RadarChart from "./components/RadarChart";
 import PolarChart from "./components/PolarChart";
 import Footer from "./components/Footer";
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, useLocation } from "react-router-dom"
 import About from "./components/About"
+
 
 const DEFAULT_WOM_TOKEN = {
   Token: "WOM",
@@ -35,7 +36,6 @@ function App() {
   const [storedTweets, setStoredTweets] = useState([]);
   const [freshTweets, setFreshTweets] = useState([]);
 
-
   const tokenInfoRef = useRef(null);
   const leaderboardRef = useRef(null);
 
@@ -50,6 +50,23 @@ function App() {
   useEffect(() => {
     localStorage.removeItem("tokens");
   }, []);
+
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname === "/" && location.state?.scrollTo) {
+      const target = location.state.scrollTo;
+
+      setTimeout(() => {
+        if (target === "leaderboard") {
+          leaderboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (target === "sentiment") {
+          tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+    }
+  }, [location]);
 
 
   // Function to fetch all tokens data (runs every 60s)
@@ -218,53 +235,58 @@ function App() {
 
 
           {/* Search Bar */}
-          <div ref={tokenInfoRef} id="token-info" className="w-full max-w-3xl mx-auto mb-4 px-4">
-            <div className="relative">
-            <input
-              type="text"
-              placeholder="Enter token address..."
-              value={searchQuery}
-              
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (e.target.value.trim() === "") {
-                  // Reset state if search is cleared
-                  setSearchedToken(DEFAULT_WOM_TOKEN);
-                  setHasFetched(true);
-                  const womTweets = tweets.filter(tweet => tweet.token === "WOM");
-                  setTweets(womTweets);
-                }
-              }}
-          
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-              className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#0A0F0A] border border-green-800/30 
-              shadow-sm text-green-300 placeholder-green-500 outline-none transition-all 
-              focus:border-green-400 focus:ring-0"
-            />
+          <div
+            ref={tokenInfoRef}
+            id="token-info"
+            className="w-full max-w-3xl mx-auto mb-4 px-4"
+          >
+            <div className="relative group">
+              <input
+                type="text"
+                placeholder="Enter token address..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value.trim() === "") {
+                    setSearchedToken(DEFAULT_WOM_TOKEN);
+                    setHasFetched(true);
+                    const womTweets = tweets.filter((tweet) => tweet.token === "WOM");
+                    setTweets(womTweets);
+                  }
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch();
+                  }
+                }}
+                className="w-full pl-10 pr-10 py-3 rounded-xl bg-gradient-to-br from-green-800/20 to-green-900/10 border border-green-700/30 shadow-md backdrop-blur-sm text-green-300 placeholder-green-500 outline-none transition-all duration-300 ease-in-out focus:ring-2 focus:ring-green-400 focus:border-green-500"
+              />
 
               {/* Search Icon */}
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500 pointer-events-none"
+              />
 
+              {/* Clear Button */}
               {searchQuery && (
                 <button
                   onClick={() => {
                     setSearchQuery("");
                     setSearchedToken(DEFAULT_WOM_TOKEN);
                     setHasFetched(true);
-                    const womTweets = tweets.filter(tweet => tweet.token === "WOM");
+                    const womTweets = tweets.filter((tweet) => tweet.token === "WOM");
                     setTweets(womTweets);
                   }}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-sm hover:text-green-300"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-sm hover:text-green-300 transition"
+                  aria-label="Clear search"
                 >
                   ✕
                 </button>
               )}
             </div>
           </div>
+
 
 
           {/* Show Data Only After Tokens Are Fetched */}

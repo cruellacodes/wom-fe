@@ -8,12 +8,32 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
   const navigate = useNavigate();
 
   const handleScrollRedirect = (target) => {
-    navigate("/", { state: { scrollTo: target } });
-    setMenuOpen(false); // close mobile menu
+    setMenuOpen(false);
+    setTimeout(() => {
+      navigate("/", { state: { scrollTo: target } });
+    }, 100);
   };
 
+  const mobileNavItems = [
+    {
+      label: "Leaderboard",
+      action: () => handleScrollRedirect("leaderboard"),
+    },
+    {
+      label: "Sentiment",
+      action: () => handleScrollRedirect("sentiment"),
+    },
+    {
+      label: "How it works",
+      action: () => {
+        setMenuOpen(false);
+        navigate("/about");
+      },
+    },
+  ];
+
   return (
-    <header className="relative flex items-center justify-between px-6 py-4 text-green-300 shadow-xl backdrop-blur-xl bg-black/80 border-b border-green-800/20">
+    <header className="relative flex items-center justify-between px-6 py-4 text-green-300 shadow-xl backdrop-blur-xl bg-black/80 border-b border-green-800/20 z-50">
       
       {/* Left Side - Clickable Logo */}
       <div
@@ -79,35 +99,18 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
 
       {/* Mobile Dropdown Menu */}
       {menuOpen && (
-        <div className="absolute top-16 right-6 w-52 bg-gradient-to-br from-black/90 to-green-900/20 backdrop-blur-lg border border-green-700/20 shadow-2xl rounded-lg md:hidden transition-all duration-300 ease-in-out">
+        <div className="absolute top-16 right-6 w-52 z-50 bg-gradient-to-br from-black/90 to-green-900/20 backdrop-blur-lg border border-green-700/20 shadow-2xl rounded-lg md:hidden transition-all duration-300 ease-in-out">
           <ul className="flex flex-col">
-            <li>
-              <button
-                className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
-                onClick={() => handleScrollRedirect("leaderboard")}
-              >
-                Leaderboard
-              </button>
-            </li>
-            <li>
-              <button
-                className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
-                onClick={() => handleScrollRedirect("sentiment")}
-              >
-                Sentiment
-              </button>
-            </li>
-            <li>
-              <button
-                className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate("/about");
-                }}
-              >
-                How it works
-              </button>
-            </li>
+            {mobileNavItems.map((item) => (
+              <li key={item.label}>
+                <button
+                  className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
+                  onClick={item.action}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       )}
