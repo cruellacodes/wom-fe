@@ -13,7 +13,7 @@ const RadarChart = ({ tokens }) => {
 
     Promise.all(
       tokens.map(token =>
-        fetch(`http://127.0.0.1:8000/tweet-volume/?token=${token.Token}`)
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-volume/?token=${token.Token}`)
           .then(res => {
             if (!res.ok) throw new Error(`Error fetching volume for ${token.Token}`);
             return res.json();
