@@ -323,7 +323,7 @@ function App() {
               <div ref={leaderboardRef} className="w-full">
                 <Leaderboard 
                   tokens={displayedTokens} 
-                  tweets={tweets}
+                  tweets={storedTweets}
                   onTokenClick={handleTokenClick}
                   loading={loading} 
                   setScrollToBubbleChart={setScrollToBubbleChart}
