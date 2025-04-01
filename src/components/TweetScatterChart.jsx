@@ -9,6 +9,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
           height = 400,
           margin = { top: 20, right: 20, bottom: 50, left: 60 };
 
+    // Clear previous chart content and tooltips
     d3.select(svgRef.current).selectAll("*").remove();
     d3.select("body").selectAll(".tooltip").remove();
 
@@ -18,6 +19,16 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       .style("width", "100%")
       .style("height", "auto");
 
+    // Define the current time and 24 hours ago (UTC)
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Filter tweets to include only those from the last 24 hours
+    const recentTweets = tweets.filter(
+      tweet => new Date(tweet.created_at) >= twentyFourHoursAgo
+    );
+
+    // Function to transform followers count
     function transformFollowers(value) {
       if (value <= 500) return value / 500;
       if (value <= 1000) return 1 + (value - 500) / 500;
@@ -27,7 +38,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       return 5 + (value - 50000) / 50000;
     }
 
-    const data = tweets.map(tweet => ({
+    const data = recentTweets.map(tweet => ({
       date: new Date(tweet.created_at),
       originalFollowers: Math.min(tweet.followers_count, 100000),
       transformedFollowers: transformFollowers(Math.min(tweet.followers_count, 100000)),
@@ -36,17 +47,19 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       profilePic: tweet.profile_pic || "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
     }));
 
+    // Set the xScale to always span the last 24 hours
     const xScale = d3.scaleTime()
-                     .domain(d3.extent(data, d => d.date))
+                     .domain([twentyFourHoursAgo, now])
                      .range([margin.left, width - margin.right]);
 
     const yScale = d3.scaleLinear()
                      .domain([0, 6])
                      .range([height - margin.bottom, margin.top]);
 
+    // Use d3.utcFormat to display time in UTC (hours and minutes)
     const xAxis = d3.axisBottom(xScale)
                     .ticks(6)
-                    .tickFormat(d3.timeFormat("%H:%M"));
+                    .tickFormat(d3.utcFormat("%H:%M"));
 
     const yAxis = d3.axisLeft(yScale)
                     .tickValues([0, 1, 2, 3, 4, 5, 6])
@@ -55,6 +68,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
                       4: "10K", 5: "50K", 6: "100K+"
                     }[d]));
 
+    // Append x-axis
     svg.append("g")
        .attr("transform", `translate(0, ${height - margin.bottom})`)
        .call(xAxis)
@@ -62,6 +76,16 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
        .style("fill", "#22C55E")
        .style("font-size", "11px");
 
+    // Append x-axis title
+    svg.append("text")
+       .attr("x", width / 2)
+       .attr("y", height - margin.bottom + 40)
+       .attr("text-anchor", "middle")
+       .style("fill", "#22C55E")
+       .style("font-size", "12px")
+       .text("Time (UTC)");
+
+    // Append y-axis
     svg.append("g")
        .attr("transform", `translate(${margin.left}, 0)`)
        .call(yAxis)
@@ -69,6 +93,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
        .style("fill", "#22C55E")
        .style("font-size", "11px");
 
+    // Append grid lines for y-axis
     svg.append("g")
        .attr("class", "grid")
        .attr("transform", `translate(${margin.left}, 0)`)
@@ -79,6 +104,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
        .attr("stroke", "rgba(34,197,94,0.4)")
        .attr("stroke-dasharray", "3");
 
+    // Create tooltip element
     const tooltip = d3.select("body")
       .append("div")
       .attr("class", "tooltip")
@@ -95,6 +121,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       .style("transition", "opacity 0.15s ease-in-out")
       .style("max-width", "250px");
 
+    // Create definitions for profile picture patterns
     const defs = svg.append("defs");
     data.forEach((d, i) => {
       defs.append("pattern")
@@ -109,6 +136,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
           .attr("preserveAspectRatio", "xMidYMid slice");
     });
 
+    // Plot the tweet circles
     svg.selectAll("circle.data-point")
        .data(data)
        .enter()
