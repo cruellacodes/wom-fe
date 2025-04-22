@@ -19,11 +19,12 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
     }
   }, [setScrollToBubbleChart]);
 
-  const formatNumber = (num) => {
+  const safeFormatNumber = (num) => {
+    if (typeof num !== "number" || isNaN(num)) return "—";
     if (num >= 1e9) return (num / 1e9).toFixed(1) + "B";
     if (num >= 1e6) return (num / 1e6).toFixed(1) + "M";
     if (num >= 1e3) return (num / 1e3).toFixed(1) + "K";
-    return num;
+    return num.toLocaleString();
   };
 
   const getBatteryColor = (score) => {
@@ -57,7 +58,7 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
     if (typeof aVal === "string" && typeof bVal === "string") {
       return sortOrder * aVal.localeCompare(bVal);
     } else {
-      return sortOrder * (aVal - bVal);
+      return sortOrder * ((aVal ?? 0) - (bVal ?? 0));
     }
   });
 
@@ -86,8 +87,8 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
           <tbody>
             {sortedTokens.map((token) => (
               <tr
-                key={token.Token}
-                onClick={() => onTokenClick(token)}
+                key={token.Token ?? Math.random()}
+                onClick={() => token && onTokenClick(token)}
                 className="border-b border-green-900/40 hover:bg-green-900/30 transition-all duration-300 cursor-pointer"
               >
                 <td className="p-3 flex items-center">
@@ -95,31 +96,35 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
                 </td>
                 <td className="p-3 font-semibold text-white">
                   <span className="inline-flex items-center gap-1">
-                    {token.Token.toUpperCase()}
-                    <a
-                      href={token.dex_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-green-400 transition-all duration-200"
-                    >
-                      <AiOutlineLineChart className="w-4 h-4 text-gray-400 hover:text-green-400 transition-all duration-200" />
-                    </a>
+                    {(token.Token ?? "—").toUpperCase?.() ?? "—"}
+                    {token.dex_url && (
+                      <a
+                        href={token.dex_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-green-400 transition-all duration-200"
+                      >
+                        <AiOutlineLineChart className="w-4 h-4 text-gray-400 hover:text-green-400 transition-all duration-200" />
+                      </a>
+                    )}
                   </span>
                 </td>
                 <td className="p-3 flex items-center gap-2">
                   <div className="relative w-16 h-6 bg-gray-800 rounded-md flex items-center px-1 border border-gray-500">
                     <div
-                      className={`h-4 rounded-md ${getBatteryColor(token.WomScore)}`}
-                      style={{ width: `${token.WomScore}%` }}
+                      className={`h-4 rounded-md ${getBatteryColor(token.WomScore ?? 0)}`}
+                      style={{ width: `${token.WomScore ?? 0}%` }}
                     ></div>
                   </div>
-                  <span className="text-xs font-semibold text-white">{token.WomScore}%</span>
+                  <span className="text-xs font-semibold text-white">
+                    {token.WomScore != null ? `${token.WomScore}%` : "—"}
+                  </span>
                 </td>
-                <td className="p-3">{formatNumber(token.MarketCap)}</td>
-                <td className="p-3">{token.Age < 1 ? "<1" : token.Age}</td>
-                <td className="p-3">{formatNumber(token.Volume)}</td>
-                <td className="p-3">{formatNumber(token.MakerCount)}</td>
-                <td className="p-3">{formatNumber(token.Liquidity)}</td>
+                <td className="p-3">{safeFormatNumber(token.MarketCap)}</td>
+                <td className="p-3">{token.Age != null ? (token.Age < 1 ? "<1" : token.Age) : "—"}</td>
+                <td className="p-3">{safeFormatNumber(token.Volume)}</td>
+                <td className="p-3">{safeFormatNumber(token.MakerCount)}</td>
+                <td className="p-3">{safeFormatNumber(token.Liquidity)}</td>
               </tr>
             ))}
           </tbody>
