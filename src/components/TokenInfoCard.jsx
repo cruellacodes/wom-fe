@@ -77,12 +77,21 @@ const TokenInfoCard = ({ token }) => {
       {/* Market Data */}
       <div className="grid grid-cols-2 gap-3 text-xs">
         {[
-          { label: "Market Cap", value: `$${token.MarketCap.toLocaleString()}` },
-          { label: "24h Volume", value: `$${token.Volume.toLocaleString()}` },
-          { label: "Liquidity", value: `$${token.Liquidity.toLocaleString()}` },
+          {
+            label: "Market Cap",
+            value: token.MarketCap != null ? `$${token.MarketCap.toLocaleString()}` : "—",
+          },
+          {
+            label: "24h Volume",
+            value: token.Volume != null ? `$${token.Volume.toLocaleString()}` : "—",
+          },
+          {
+            label: "Liquidity",
+            value: token.Liquidity != null ? `$${token.Liquidity.toLocaleString()}` : "—",
+          },
           {
             label: "1h Change",
-            value: `${(token.priceChange1h ?? 0).toFixed(2)}%`,      
+            value: `${(token.priceChange1h ?? 0).toFixed(2)}%`,
             className: token.priceChange1h >= 0 ? "text-green-300" : "text-red-400",
           },
         ].map((item, index) => (
@@ -92,6 +101,7 @@ const TokenInfoCard = ({ token }) => {
           </div>
         ))}
       </div>
+
     </div>
   );
 };
