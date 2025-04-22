@@ -4,9 +4,9 @@ import solanaIcon from "../assets/solana.png";
 import BubbleChart from "./BubbleChart";
 import { AiOutlineLineChart } from "react-icons/ai";
 
-const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) => {
+const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, page, onPageChange }) => {
   const [sortBy, setSortBy] = useState("WomScore");
-  const [sortOrder, setSortOrder] = useState(-1); // -1: descending, 1: ascending
+  const [sortOrder, setSortOrder] = useState(-1);
   const bubbleChartRef = useRef(null);
 
   useEffect(() => {
@@ -19,7 +19,6 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
     }
   }, [setScrollToBubbleChart]);
 
-  // Format large numbers
   const formatNumber = (num) => {
     if (num >= 1e9) return (num / 1e9).toFixed(1) + "B";
     if (num >= 1e6) return (num / 1e6).toFixed(1) + "M";
@@ -27,14 +26,12 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
     return num;
   };
 
-  // Battery style for WOM Score
   const getBatteryColor = (score) => {
     if (score >= 49) return "bg-green-500";
     if (score >= 25) return "bg-yellow-400";
     return "bg-red-500";
   };
 
-  // Handler for sorting columns
   const handleSort = (key) => {
     if (sortBy === key) {
       setSortOrder(sortOrder * -1);
@@ -44,7 +41,6 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
     }
   };
 
-  // Render sorting arrow
   const renderSortArrow = (key) => {
     if (sortBy !== key) return <span className="text-gray-500 ml-1">↕</span>;
     return sortOrder === -1 ? (
@@ -54,7 +50,6 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
     );
   };
 
-  // Sort tokens
   const sortedTokens = [...tokens].sort((a, b) => {
     let aVal = a[sortBy];
     let bVal = b[sortBy];
@@ -67,9 +62,7 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
   });
 
   return (
-    <div className="p-6 rounded-xl text-green-300 shadow-lg bg-[#0A0F0A] border border-green-800/40 
-      backdrop-blur-lg bg-opacity-90 hover:shadow-[0px_0px_60px_rgba(34,197,94,0.3)] transition-all duration-300">
-      
+    <div className="p-6 rounded-xl text-green-300 shadow-lg bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg bg-opacity-90 hover:shadow-[0px_0px_60px_rgba(34,197,94,0.3)] transition-all duration-300">
       <h2 className="text-lg font-bold text-green-400 uppercase tracking-wide mb-6 text-center">
         Trending Tokens
       </h2>
@@ -103,10 +96,10 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
                 <td className="p-3 font-semibold text-white">
                   <span className="inline-flex items-center gap-1">
                     {token.Token.toUpperCase()}
-                    <a 
-                      href={token.dex_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      href={token.dex_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="hover:text-green-400 transition-all duration-200"
                     >
                       <AiOutlineLineChart className="w-4 h-4 text-gray-400 hover:text-green-400 transition-all duration-200" />
@@ -120,9 +113,7 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
                       style={{ width: `${token.WomScore}%` }}
                     ></div>
                   </div>
-                  <span className="text-xs font-semibold text-white">
-                    {token.WomScore}%
-                  </span>
+                  <span className="text-xs font-semibold text-white">{token.WomScore}%</span>
                 </td>
                 <td className="p-3">{formatNumber(token.MarketCap)}</td>
                 <td className="p-3">{token.Age < 1 ? "<1" : token.Age}</td>
@@ -134,6 +125,25 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart }) =
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      <div className="mt-6 flex justify-center gap-4">
+        <button
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className="px-4 py-2 bg-green-700 text-white rounded disabled:opacity-40"
+        >
+          Prev
+        </button>
+        <span className="text-green-300 font-medium">Page {page}</span>
+        <button
+          onClick={() => onPageChange(page + 1)}
+          className="px-4 py-2 bg-green-700 text-white rounded"
+        >
+          Next
+        </button>
+      </div>
+
       <div ref={bubbleChartRef}>
         <BubbleChart tokens={tokens} tweets={tweets} />
       </div>
