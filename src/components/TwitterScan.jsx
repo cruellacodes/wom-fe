@@ -40,38 +40,40 @@ const TwitterScan = () => {
   }, []);
 
   const handleSelectToken = async (token_symbol) => {
-        if (watchlist.some((t) => t.token === token_symbol)) return;
-        setLoadingToken(true);
-
-        try {
-        
-            const encoded_symbol = encodeURIComponent(token_symbol); 
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-buckets/?token_symbol=${encoded_symbol}`);
-
-            const data = await res.json();
-
-            if (data?.buckets) {
-                const tokenData = {
-                token: token_symbol,
-                total: Object.values(data.buckets).reduce((a, b) => a + b, 0),
-                intervals: {
-                    "1h": data.buckets["1h"] ?? 0,
-                    "6h": data.buckets["6h"] ?? 0,
-                    "12h": data.buckets["12h"] ?? 0,
-                    "24h": data.buckets["24h"] ?? 0,
-                    "48h": data.buckets["48h"] ?? 0,
-                },
-                history: Object.values(data.buckets).slice(0, 7),
-                };
-                setWatchlist((prev) => [...prev, tokenData]);
-            }
-        } catch (err) {
-            console.error("Error fetching token tweet buckets:", err);
-        }
-
-        setModalOpen(false);
-        setLoadingToken(false);
-    };
+    if (watchlist.some((t) => t.token === token_symbol)) return;
+    setLoadingToken(true);
+  
+    try {
+      const encoded_symbol = encodeURIComponent(token_symbol);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-buckets/?token_symbol=${encoded_symbol}`);
+      const data = await res.json();
+  
+      if (data?.bucket_data) {
+        const bucketData = data.bucket_data;
+        const tokenData = {
+          token: token_symbol,
+          total: Object.values(bucketData).reduce((a, b) => a + b, 0),
+          intervals: {
+            "1h": bucketData["1h"] ?? 0,
+            "6h": bucketData["6h"] ?? 0,
+            "12h": bucketData["12h"] ?? 0,
+            "24h": bucketData["24h"] ?? 0,
+            "48h": bucketData["48h"] ?? 0,
+          },
+          history: Object.values(bucketData), 
+        };
+        setWatchlist((prev) => [...prev, tokenData]);
+      } else {
+        console.warn("No bucket data returned for this token.");
+      }
+    } catch (err) {
+      console.error("Error fetching token tweet buckets:", err);
+    }
+  
+    setModalOpen(false);
+    setLoadingToken(false);
+  };
+  
 
   return (
     <div className="bg-[#010409] min-h-screen text-gray-300">
@@ -115,7 +117,7 @@ const TwitterScan = () => {
               </ul>
               <Bar
                 data={{
-                  labels: history.map((_, i) => `T-${i + 1}`),
+                    labels: ["1h", "6h", "12h", "24h", "48h"],
                   datasets: [
                     {
                       label: "Tweet Volume",
