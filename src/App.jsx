@@ -14,6 +14,7 @@ import About from "./components/About";
 import TwitterScan from "./components/TwitterScan";
 
 function App() {
+  const [initialLoading, setInitialLoading] = useState(true); 
   const [searchedToken, setSearchedToken] = useState(null);
   const [tokens, setTokens] = useState([]);
   const [tweets, setTweets] = useState([]);
@@ -87,12 +88,12 @@ function App() {
       const tweetPromises = tokens.map(async (token) => {
         const symbol = encodeURIComponent((token.token_symbol || token.Token)?.toLowerCase());
         if (!symbol) return [];
-  
+
         const response = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/stored-tweets/?token_symbol=${symbol}`
         );
         const data = await response.json();
-  
+
         return Array.isArray(data.tweets)
           ? data.tweets.map((tweet) => ({
               ...tweet,
@@ -100,7 +101,7 @@ function App() {
             }))
           : [];
       });
-  
+
       const allTweets = await Promise.all(tweetPromises);
       setStoredTweets(allTweets.flat());
     } catch (error) {
@@ -109,10 +110,13 @@ function App() {
     }
     setLoading(false);
   };
-  
 
   useEffect(() => {
-    fetchAllTokensData(currentPage);
+    const loadData = async () => {
+      await fetchAllTokensData(currentPage);
+      setInitialLoading(false); 
+    };
+    loadData();
   }, [currentPage]);
 
   useEffect(() => {
@@ -127,21 +131,20 @@ function App() {
     setSearchQuery("");
     setSearchedToken(token);
     setHasFetched(true);
-  
+
     const tokenSymbol = token.token_symbol || token.Token;
     const tokenLower = tokenSymbol?.toLowerCase();
-  
+
     const relevantStoredTweets = storedTweets.filter(
       (tweet) => tweet.token_symbol === tokenLower
     );
-  
+
     setTweets(relevantStoredTweets);
-  
+
     setTimeout(() => {
       tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
-  
 
   const handleSearch = async () => {
     if (!searchQuery) return;
@@ -197,12 +200,23 @@ function App() {
   const topTokens = getTopTokensByTweetCount(displayedTokens, 3);
   const topTokensByWomScore = getTopTokensByWomScore(displayedTokens, 5);
 
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#010409] text-green-300">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 border-4 border-green-400 border-dashed rounded-full animate-spin"></div>
+          <p className="mt-3 text-sm animate-pulse">Loading data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Routes>
       <Route
         path="/"
         element={
-          <div className="bg-[#010409] min-h-screen text-gray-300">
+          <div className="bg-[#010409] min-h-screen text-gray-300 transition-opacity duration-700 ease-in opacity-100">
             <Header onScrollToLeaderboard={scrollToLeaderboard} scrollToTweetSentimentAreaChart={setScrollToTweetSentimentAreaChart} />
             
             {/* Token Leaderboard Charts */}
