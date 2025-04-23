@@ -106,21 +106,24 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
        .attr("stroke-dasharray", "3");
 
     // Create tooltip element
-    const tooltip = d3.select("body")
-      .append("div")
-      .attr("class", "tooltip")
-      .style("position", "absolute")
-      .style("background", "#0A0F0A")
-      .style("border", "1px solid #22C55E")
-      .style("color", "#fff")
-      .style("padding", "8px 12px")
-      .style("border-radius", "8px")
-      .style("box-shadow", "0 3px 10px rgba(0, 0, 0, 0.6)")
-      .style("font-size", "12px")
-      .style("pointer-events", "none")
-      .style("opacity", 0)
-      .style("transition", "opacity 0.15s ease-in-out")
-      .style("max-width", "250px");
+      const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("background", "#0A0F0A")
+        .style("border", "1px solid #22C55E")
+        .style("color", "#fff")
+        .style("padding", "8px 12px")
+        .style("border-radius", "8px")
+        .style("box-shadow", "0 3px 10px rgba(0, 0, 0, 0.6)")
+        .style("font-size", "12px")
+        .style("pointer-events", "none")
+        .style("opacity", 0)
+        .style("transition", "opacity 0.15s ease-in-out")
+        .style("max-width", "260px")
+        .style("word-wrap", "break-word")
+        .style("white-space", "normal");
+
 
     // Create definitions for profile picture patterns
     const defs = svg.append("defs");
@@ -152,11 +155,11 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
        .on("mouseover", (event, d) => {
          tooltip.transition().duration(150).style("opacity", 1);
          tooltip.html(
-           `<div style="font-weight: bold; color: #22C55E;">@${d.username}</div>
-            <hr style="border: none; border-top: 1px solid #22C55E; margin: 6px;">
-            <div style="color: #fff;">${d.text}</div>
-            <div style="font-style: italic; color: #bbb; margin-top: 4px;">Followers: ${d.originalFollowers.toLocaleString()}</div>`
-         )
+          `<div style="font-weight: bold; color: #22C55E;">@${d.username}</div>
+           <hr style="border: none; border-top: 1px solid #22C55E; margin: 6px;">
+           <div style="color: #fff; word-wrap: break-word; white-space: normal;">${d.text}</div>
+           <div style="font-style: italic; color: #bbb; margin-top: 4px;">Followers: ${d.originalFollowers.toLocaleString()}</div>`
+        )        
          .style("left", event.pageX + 12 + "px")
          .style("top", event.pageY - 26 + "px");
        })
