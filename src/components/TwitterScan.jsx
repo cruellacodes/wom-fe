@@ -40,35 +40,38 @@ const TwitterScan = () => {
   }, []);
 
   const handleSelectToken = async (token_symbol) => {
-    if (watchlist.some((t) => t.token === token_symbol)) return;
-    setLoadingToken(true);
+        if (watchlist.some((t) => t.token === token_symbol)) return;
+        setLoadingToken(true);
 
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-buckets/${token_symbol}`);
-      const data = await res.json();
+        try {
+        
+            const encoded_symbol = encodeURIComponent(token_symbol); 
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-buckets/?token_symbol=${encoded_symbol}`);
 
-      if (data?.buckets) {
-        const tokenData = {
-          token: token_symbol,
-          total: Object.values(data.buckets).reduce((a, b) => a + b, 0),
-          intervals: {
-            "1h": data.buckets["1h"] ?? 0,
-            "6h": data.buckets["6h"] ?? 0,
-            "12h": data.buckets["12h"] ?? 0,
-            "24h": data.buckets["24h"] ?? 0,
-            "48h": data.buckets["48h"] ?? 0,
-          },
-          history: Object.values(data.buckets).slice(0, 7),
-        };
-        setWatchlist((prev) => [...prev, tokenData]);
-      }
-    } catch (err) {
-      console.error("Error fetching token tweet buckets:", err);
-    }
+            const data = await res.json();
 
-    setModalOpen(false);
-    setLoadingToken(false);
-  };
+            if (data?.buckets) {
+                const tokenData = {
+                token: token_symbol,
+                total: Object.values(data.buckets).reduce((a, b) => a + b, 0),
+                intervals: {
+                    "1h": data.buckets["1h"] ?? 0,
+                    "6h": data.buckets["6h"] ?? 0,
+                    "12h": data.buckets["12h"] ?? 0,
+                    "24h": data.buckets["24h"] ?? 0,
+                    "48h": data.buckets["48h"] ?? 0,
+                },
+                history: Object.values(data.buckets).slice(0, 7),
+                };
+                setWatchlist((prev) => [...prev, tokenData]);
+            }
+        } catch (err) {
+            console.error("Error fetching token tweet buckets:", err);
+        }
+
+        setModalOpen(false);
+        setLoadingToken(false);
+    };
 
   return (
     <div className="bg-[#010409] min-h-screen text-gray-300">
