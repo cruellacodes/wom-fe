@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
-import BubbleChart from "./BubbleChart";
+import TweetSentimentAreaChart from "./TweetSentimentAreaChart";
 import { AiOutlineLineChart } from "react-icons/ai";
 
-const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, page, onPageChange }) => {
-  const [sortBy, setSortBy] = useState("WomScore");
+const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollTweetSentimentAreaChart, page, onPageChange }) => {
+  const [sortBy, setSortBy] = useState("wom_score");
   const [sortOrder, setSortOrder] = useState(-1);
-  const bubbleChartRef = useRef(null);
+  const TweetSentimentAreaChartRef = useRef(null);
 
   useEffect(() => {
-    if (setScrollToBubbleChart) {
-      setScrollToBubbleChart(() => () => {
-        if (bubbleChartRef.current) {
-          bubbleChartRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (setScrollTweetSentimentAreaChart) {
+      setScrollTweetSentimentAreaChart(() => () => {
+        if (TweetSentimentAreaChartRef.current) {
+          TweetSentimentAreaChartRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       });
     }
-  }, [setScrollToBubbleChart]);
+  }, [setScrollTweetSentimentAreaChart]);
 
   const safeFormatNumber = (num) => {
     if (typeof num !== "number" || isNaN(num)) return "—";
@@ -73,13 +73,21 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
           <thead>
             <tr className="bg-[#06100A] text-green-300 text-xs tracking-wide">
               <th className="p-3">CHAIN</th>
-              {["Token", "WomScore", "MarketCap", "Age(h)", "Volume", "MakerCount", "Liquidity"].map((key) => (
+              {[
+                { label: "Token", key: "token_symbol" },
+                { label: "WomScore", key: "wom_score" },
+                { label: "MarketCap", key: "market_cap_usd" },
+                { label: "Age(h)", key: "age_hours" },
+                { label: "Volume", key: "volume_usd" },
+                { label: "MakerCount", key: "maker_count" },
+                { label: "Liquidity", key: "liquidity_usd" },
+              ].map(({ label, key }) => (
                 <th
                   key={key}
                   className="p-3 cursor-pointer hover:text-green-400 transition duration-200"
                   onClick={() => handleSort(key)}
                 >
-                  {key.toUpperCase()} {renderSortArrow(key)}
+                  {label.toUpperCase()} {renderSortArrow(key)}
                 </th>
               ))}
             </tr>
@@ -87,7 +95,7 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
           <tbody>
             {sortedTokens.map((token) => (
               <tr
-                key={token.Token ?? Math.random()}
+                key={token.address}
                 onClick={() => token && onTokenClick(token)}
                 className="border-b border-green-900/40 hover:bg-green-900/30 transition-all duration-300 cursor-pointer"
               >
@@ -96,7 +104,7 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
                 </td>
                 <td className="p-3 font-semibold text-white">
                   <span className="inline-flex items-center gap-1">
-                    {(token.Token ?? "—").toUpperCase?.() ?? "—"}
+                    {(token.token_symbol ?? "—").toUpperCase?.() ?? "—"}
                     {token.dex_url && (
                       <a
                         href={token.dex_url}
@@ -112,45 +120,27 @@ const Leaderboard = ({ tokens, tweets, onTokenClick, setScrollToBubbleChart, pag
                 <td className="p-3 flex items-center gap-2">
                   <div className="relative w-16 h-6 bg-gray-800 rounded-md flex items-center px-1 border border-gray-500">
                     <div
-                      className={`h-4 rounded-md ${getBatteryColor(token.WomScore ?? 0)}`}
-                      style={{ width: `${token.WomScore ?? 0}%` }}
+                      className={`h-4 rounded-md ${getBatteryColor(token.wom_score ?? 0)}`}
+                      style={{ width: `${token.wom_score ?? 0}%` }}
                     ></div>
                   </div>
                   <span className="text-xs font-semibold text-white">
-                    {token.WomScore != null ? `${token.WomScore}%` : "—"}
+                    {token.wom_score != null ? `${token.wom_score}%` : "—"}
                   </span>
                 </td>
-                <td className="p-3">{safeFormatNumber(token.MarketCap)}</td>
-                <td className="p-3">{token.Age != null ? (token.Age < 1 ? "<1" : token.Age) : "—"}</td>
-                <td className="p-3">{safeFormatNumber(token.Volume)}</td>
-                <td className="p-3">{safeFormatNumber(token.MakerCount)}</td>
-                <td className="p-3">{safeFormatNumber(token.Liquidity)}</td>
+                <td className="p-3">{safeFormatNumber(token.market_cap_usd)}</td>
+                <td className="p-3">{token.age_hours != null ? (token.age_hours < 1 ? "<1" : token.age_hours) : "—"}</td>
+                <td className="p-3">{safeFormatNumber(token.volume_usd)}</td>
+                <td className="p-3">{safeFormatNumber(token.maker_count)}</td>
+                <td className="p-3">{safeFormatNumber(token.liquidity_usd)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="mt-6 flex justify-center gap-4">
-        <button
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-          className="px-4 py-2 bg-green-700 text-white rounded disabled:opacity-40"
-        >
-          Prev
-        </button>
-        <span className="text-green-300 font-medium">Page {page}</span>
-        <button
-          onClick={() => onPageChange(page + 1)}
-          className="px-4 py-2 bg-green-700 text-white rounded"
-        >
-          Next
-        </button>
-      </div>
-
-      <div ref={bubbleChartRef}>
-        <BubbleChart tokens={tokens} tweets={tweets} />
+      <div ref={TweetSentimentAreaChartRef}>
+        <TweetSentimentAreaChart tokens={tokens} tweets={tweets} />
       </div>
     </div>
   );

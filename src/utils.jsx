@@ -12,3 +12,16 @@ export const getTopTokensByWomScore = (tokens, count = 5) => {
       .slice(0, count); // Return top `count` tokens
   };
   
+
+export const sortTokens = (tokens, sortBy = "wom_score", sortOrder = -1) => {
+  return [...tokens].sort((a, b) => {
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return sortOrder * aVal.localeCompare(bVal);
+    }
+
+    return sortOrder * ((aVal ?? 0) - (bVal ?? 0));
+  });
+};

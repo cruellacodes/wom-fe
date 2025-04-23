@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
 
-const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
+const Header = ({ onScrollToLeaderboard, scrollToTweetSentimentAreaChart }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -28,6 +28,13 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
       action: () => {
         setMenuOpen(false);
         navigate("/about");
+      },
+    },
+    {
+      label: "TwitterScan",
+      action: () => {
+        setMenuOpen(false);
+        navigate("/twitterscan");
       },
     },
   ];
@@ -62,6 +69,13 @@ const Header = ({ onScrollToLeaderboard, scrollToBubbleChart }) => {
 
         {/* Desktop Buttons */}
         <div className="hidden md:flex gap-4">
+          <button
+            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
+            onClick={() => navigate("/twitterscan")}
+          >
+            <span className="text-sm text-green-300">TwitterScan</span>
+          </button>
+
           <button
             className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
             onClick={() => navigate("/about")}
