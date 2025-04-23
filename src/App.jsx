@@ -8,9 +8,10 @@ import Podium from "./components/Podium";
 import RadarChart from "./components/RadarChart";
 import PolarChart from "./components/PolarChart";
 import Footer from "./components/Footer";
-import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
+import { getTopTokensByTweetCount, getTopTokensByWomScore, sortTokens } from "./utils";
 import { Routes, Route, useLocation } from "react-router-dom";
 import About from "./components/About";
+import TwitterScan from "./components/TwitterScan";
 
 function App() {
   const [searchedToken, setSearchedToken] = useState(null);
@@ -27,6 +28,7 @@ function App() {
 
   const tokenInfoRef = useRef(null);
   const leaderboardRef = useRef(null);
+  const tweetSentimentRef = useRef(null);
 
   const scrollToLeaderboard = () => {
     setTimeout(() => {
@@ -34,7 +36,7 @@ function App() {
     }, 100);
   };
 
-  const [scrollToBubbleChart, setScrollToBubbleChart] = useState(() => () => {});
+  const [, setScrollToTweetSentimentAreaChart] = useState(() => () => {});
   const location = useLocation();
 
   useEffect(() => {
@@ -48,7 +50,7 @@ function App() {
         if (target === "leaderboard") {
           leaderboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         } else if (target === "sentiment") {
-          tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          tweetSentimentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }, 100);
     }
@@ -68,12 +70,9 @@ function App() {
         setTokens(data.tokens);
         setDisplayedTokens(data.tokens);
         setHasFetched(true);
-        if (!searchedToken || searchedToken.Token === "WOM") {
-          handleTokenClick(data.tokens[0]);
-        }
-      } else {
-        setTokens([]);
-        setDisplayedTokens([]);
+      
+        const sorted = sortTokens(data.tokens, "wom_score", -1); 
+        handleTokenClick(sorted[0]); 
       }
     } catch (error) {
       console.error("Error fetching token data:", error);
@@ -86,14 +85,22 @@ function App() {
     setLoading(true);
     try {
       const tweetPromises = tokens.map(async (token) => {
-        if (!token.Token) return [];
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/stored-tweets/?token=${token.Token}`);
+        const symbol = encodeURIComponent((token.token_symbol || token.Token)?.toLowerCase());
+        if (!symbol) return [];
+  
+        const response = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/stored-tweets/?token_symbol=${symbol}`
+        );
         const data = await response.json();
-        return data.tweets?.map((tweet) => ({
-          ...tweet,
-          token: token.Token,
-        })) || [];
+  
+        return Array.isArray(data.tweets)
+          ? data.tweets.map((tweet) => ({
+              ...tweet,
+              token_symbol: decodeURIComponent(symbol).toLowerCase(),
+            }))
+          : [];
       });
+  
       const allTweets = await Promise.all(tweetPromises);
       setStoredTweets(allTweets.flat());
     } catch (error) {
@@ -102,6 +109,7 @@ function App() {
     }
     setLoading(false);
   };
+  
 
   useEffect(() => {
     fetchAllTokensData(currentPage);
@@ -116,13 +124,24 @@ function App() {
   };
 
   const handleTokenClick = (token) => {
-    setLoadingTweets(false);
     setSearchQuery("");
     setSearchedToken(token);
+    setHasFetched(true);
+  
+    const tokenSymbol = token.token_symbol || token.Token;
+    const tokenLower = tokenSymbol?.toLowerCase();
+  
+    const relevantStoredTweets = storedTweets.filter(
+      (tweet) => tweet.token_symbol === tokenLower
+    );
+  
+    setTweets(relevantStoredTweets);
+  
     setTimeout(() => {
       tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
+  
 
   const handleSearch = async () => {
     if (!searchQuery) return;
@@ -184,43 +203,31 @@ function App() {
         path="/"
         element={
           <div className="bg-[#010409] min-h-screen text-gray-300">
-            <Header onScrollToLeaderboard={scrollToLeaderboard} scrollToBubbleChart={scrollToBubbleChart} />
-
-            {/* Podium Section */}
+            <Header onScrollToLeaderboard={scrollToLeaderboard} scrollToTweetSentimentAreaChart={setScrollToTweetSentimentAreaChart} />
+            
+            {/* Token Leaderboard Charts */}
             <div className="max-w-7xl mx-auto px-6 mt-8 mb-8">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="col-span-1">
                   <RadarChart tokens={topTokens} />
                 </div>
-                <div className="flex-1">
+                <div className="col-span-1">
                   <Podium tokens={topTokens} />
                 </div>
-                <div className="flex-1">
+                <div className="col-span-1">
                   <PolarChart tokens={topTokensByWomScore} />
                 </div>
               </div>
             </div>
 
-            {/* Search Bar */}
             <div ref={tokenInfoRef} className="w-full max-w-3xl mx-auto mb-4 px-4">
               <div className="relative group">
                 <input
                   type="text"
                   placeholder="Enter token address..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    if (e.target.value.trim() === "") {
-                      const firstToken = tokens[0] || null;
-                      setSearchedToken(firstToken);
-                      setHasFetched(true);
-                      const defaultTweets = tweets.filter((tweet) => tweet.token === firstToken?.Token);
-                      setTweets(defaultTweets);
-                    }
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") handleSearch();
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                   className="w-full pl-10 pr-10 py-3 rounded-xl bg-gradient-to-br from-green-800/20 to-green-900/10 border border-green-700/30 shadow-md backdrop-blur-sm text-green-300 placeholder-green-500 outline-none focus:ring-2 focus:ring-green-400 focus:border-green-500"
                 />
                 <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500 pointer-events-none" />
@@ -231,7 +238,9 @@ function App() {
                       const firstToken = tokens[0] || null;
                       setSearchedToken(firstToken);
                       setHasFetched(true);
-                      const defaultTweets = tweets.filter((tweet) => tweet.token === firstToken?.Token);
+                      const defaultTweets = storedTweets.filter(
+                        (tweet) => tweet.token_symbol === firstToken?.token_symbol?.toLowerCase()
+                      );                      
                       setTweets(defaultTweets);
                     }}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-sm hover:text-green-300 transition"
@@ -242,8 +251,6 @@ function App() {
                 )}
               </div>
             </div>
-
-            {/* Token Info + Leaderboard */}
             {hasFetched && searchedToken && (
               <div className="max-w-7xl mx-auto p-6 space-y-12">
                 <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
@@ -259,8 +266,14 @@ function App() {
                     <TweetScatterChart
                       searchedToken={searchedToken}
                       tweets={[
-                        ...storedTweets.filter((tweet) => tweet.token === searchedToken.Token),
-                        ...freshTweets.filter((tweet) => tweet.token === searchedToken.Token),
+                        ...storedTweets.filter(
+                          (tweet) =>
+                            tweet.token_symbol === (searchedToken.token_symbol || searchedToken.Token)?.toLowerCase()
+                        ),
+                        ...freshTweets.filter(
+                          (tweet) =>
+                            tweet.token_symbol === (searchedToken.token_symbol || searchedToken.Token)?.toLowerCase()
+                        ),
                       ]}
                     />
                   </div>
@@ -268,14 +281,13 @@ function App() {
                     <TokenInfoCard token={searchedToken} />
                   </div>
                 </div>
-
                 <div ref={leaderboardRef} className="w-full">
                   <Leaderboard
                     tokens={displayedTokens}
                     tweets={storedTweets}
                     onTokenClick={handleTokenClick}
                     loading={loading}
-                    setScrollToBubbleChart={setScrollToBubbleChart}
+                    setScrollToTweetSentimentAreaChart={tweetSentimentRef}
                     page={currentPage}
                     onPageChange={handlePageChange}
                   />
@@ -287,6 +299,7 @@ function App() {
         }
       />
       <Route path="/about" element={<About />} />
+      <Route path="/twitterscan" element={<TwitterScan />} />
     </Routes>
   );
 }

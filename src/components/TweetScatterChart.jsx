@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 
 const TweetScatterChart = ({ searchedToken, tweets }) => {
+
   const svgRef = useRef();
 
   useEffect(() => {
@@ -172,7 +173,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
   return (
     <div className="relative p-5 rounded-lg bg-[#0A0F0A] border border-green-900/30 shadow-md">
       <h2 className="text-lg font-semibold text-green-300 mb-3">
-        Recent Tweets for {searchedToken.Token}
+        Recent Tweets for {searchedToken.token_symbol}
       </h2>
       <svg ref={svgRef}></svg>
     </div>
