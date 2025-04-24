@@ -9,22 +9,16 @@ import {
   BarElement,
   Tooltip,
 } from "chart.js";
-import { PlusIcon } from "@heroicons/react/24/solid";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/24/solid";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
 const TwitterScan = () => {
-  const [watchlist, setWatchlist] = useState([
-    {
-      token: "$VIBE",
-      total: 9600,
-      intervals: { "1h": 200, "6h": 1500, "12h": 3200, "24h": 6000, "48h": 9600 },
-      history: [50, 70, 90, 110, 140, 160, 180],
-    },
-  ]);
+  const [watchlist, setWatchlist] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [tokenOptions, setTokenOptions] = useState([]);
   const [loadingToken, setLoadingToken] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -39,41 +33,69 @@ const TwitterScan = () => {
     fetchTokens();
   }, []);
 
-  const handleSelectToken = async (token_symbol) => {
+  const fetchTokenBuckets = async (token_symbol) => {
+    const encoded_symbol = encodeURIComponent(token_symbol);
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-buckets/?token_symbol=${encoded_symbol}`);
+    const data = await res.json();
+    return data?.bucket_data || null;
+  };
+
+  const fetchLiveBuckets = async (token_symbol) => {
+    const encoded_symbol = encodeURIComponent(token_symbol);
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/live-tweet-buckets/?token_symbol=${encoded_symbol}`);
+    const data = await res.json();
+    return data?.bucket_data || null;
+  };
+
+  const handleSelectToken = async (token_symbol, isLive = false) => {
     if (watchlist.some((t) => t.token === token_symbol)) return;
     setLoadingToken(true);
-  
+
     try {
-      const encoded_symbol = encodeURIComponent(token_symbol);
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-buckets/?token_symbol=${encoded_symbol}`);
-      const data = await res.json();
-  
-      if (data?.bucket_data) {
-        const bucketData = data.bucket_data;
+      const buckets = isLive
+        ? await fetchLiveBuckets(token_symbol)
+        : await fetchTokenBuckets(token_symbol);
+
+      if (buckets) {
         const tokenData = {
           token: token_symbol,
-          total: Object.values(bucketData).reduce((a, b) => a + b, 0),
+          total: Object.values(buckets).reduce((a, b) => a + b, 0),
           intervals: {
-            "1h": bucketData["1h"] ?? 0,
-            "6h": bucketData["6h"] ?? 0,
-            "12h": bucketData["12h"] ?? 0,
-            "24h": bucketData["24h"] ?? 0,
-            "48h": bucketData["48h"] ?? 0,
+            "1h": buckets["1h"] ?? 0,
+            "6h": buckets["6h"] ?? 0,
+            "12h": buckets["12h"] ?? 0,
+            "24h": buckets["24h"] ?? 0,
+            "48h": buckets["48h"] ?? 0,
           },
-          history: Object.values(bucketData), 
+          history: [
+            buckets["1h"] ?? 0,
+            buckets["6h"] ?? 0,
+            buckets["12h"] ?? 0,
+            buckets["24h"] ?? 0,
+            buckets["48h"] ?? 0,
+          ],
         };
         setWatchlist((prev) => [...prev, tokenData]);
       } else {
-        console.warn("No bucket data returned for this token.");
+        alert("No tweet data found for this token.");
       }
     } catch (err) {
       console.error("Error fetching token tweet buckets:", err);
     }
-  
+
     setModalOpen(false);
     setLoadingToken(false);
   };
-  
+
+  const handleSearch = async () => {
+    if (!searchInput.trim()) return;
+    await handleSelectToken(searchInput.trim(), true);
+    setSearchInput("");
+  };
+
+  const handleRemoveToken = (tokenSymbol) => {
+    setWatchlist((prev) => prev.filter((t) => t.token !== tokenSymbol));
+  };
 
   return (
     <div className="bg-[#010409] min-h-screen text-gray-300">
@@ -83,9 +105,30 @@ const TwitterScan = () => {
         <h1 className="text-3xl font-bold text-green-400 mb-2 text-center">
           TwitterScan
         </h1>
-        <p className="text-center text-sm text-gray-400 mb-6">
+        <p className="text-center text-sm text-gray-400 mb-2">
           Track Tweet Volume Over Time for Any Token
         </p>
+        <p className="text-center text-xs text-green-500 italic mb-6">
+          Tweets shown here are filtered for relevance – spam and shill posts are removed.
+        </p>
+
+        {/* Search bar */}
+        <div className="flex justify-center mb-8 gap-3">
+          <input
+            type="text"
+            placeholder="Search any token (e.g. $TOFI)"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+            className="px-4 py-2 bg-green-900/10 border border-green-700/40 text-green-300 rounded-md w-64 placeholder-green-500 focus:outline-none focus:ring focus:ring-green-500"
+          />
+          <button
+            onClick={handleSearch}
+            className="px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-600 transition"
+          >
+            Scan
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {/* Add Token Card */}
@@ -101,8 +144,14 @@ const TwitterScan = () => {
           {watchlist.map(({ token, total, intervals, history }, index) => (
             <div
               key={index}
-              className="p-5 rounded-xl bg-gradient-to-br from-[#0A0F0A] to-[#031715] border border-green-700/30 shadow-xl hover:shadow-green-400/10 transition"
+              className="relative p-5 rounded-xl bg-gradient-to-br from-[#0A0F0A] to-[#031715] border border-green-700/30 shadow-xl hover:shadow-green-400/10 transition"
             >
+              <button
+                onClick={() => handleRemoveToken(token)}
+                className="absolute top-2 right-2 text-green-400 hover:text-red-400 transition"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-green-300">{token}</h2>
                 <span className="text-sm text-gray-400">{total.toLocaleString()} tweets</span>
@@ -117,7 +166,7 @@ const TwitterScan = () => {
               </ul>
               <Bar
                 data={{
-                    labels: ["1h", "6h", "12h", "24h", "48h"],
+                  labels: ["1h", "6h", "12h", "24h", "48h"],
                   datasets: [
                     {
                       label: "Tweet Volume",

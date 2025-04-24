@@ -41,11 +41,12 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
 
     const data = recentTweets.map(tweet => ({
       date: new Date(tweet.created_at),
-      originalFollowers: Math.min(tweet.followers_count, 100000),
+      originalFollowers: tweet.followers_count,
       transformedFollowers: transformFollowers(Math.min(tweet.followers_count, 100000)),
       text: tweet.text,
       username: tweet.user_name,
-      profilePic: tweet.profile_pic || "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png"
+      profilePic: tweet.profile_pic || "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+      tweetUrl: `https://x.com/${tweet.user_name}/status/${tweet.tweet_id}`,
     }));
 
     // Set the xScale to always span the last 24 hours
@@ -140,41 +141,46 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
           .attr("preserveAspectRatio", "xMidYMid slice");
     });
 
-    svg.selectAll("circle.data-point")
-      .data(data)
-      .enter()
-      .append("circle")
-      .attr("class", "data-point")
-      .attr("cx", d => xScale(d.date))
-      .attr("cy", height - margin.bottom) // Start at bottom
-      .attr("r", 0)
-      .style("fill", (d, i) => `url(#pattern-${i})`)
-      .attr("stroke", "#22C55E")
-      .attr("stroke-width", 1.5)
-      .on("mouseover", (event, d) => {
-        tooltip.transition().duration(150).style("opacity", 1);
-        tooltip.html(
-          `<div style="font-weight: bold; color: #22C55E;">@${d.username}</div>
-          <hr style="border: none; border-top: 1px solid #22C55E; margin: 6px;">
-          <div style="color: #fff;">${d.text}</div>
-          <div style="font-style: italic; color: #bbb; margin-top: 4px;">Followers: ${d.originalFollowers.toLocaleString()}</div>`
-        )
-        .style("left", event.pageX + 12 + "px")
-        .style("top", event.pageY - 26 + "px");
-      })
-      .on("mousemove", (event) => {
-        tooltip.style("left", event.pageX + 12 + "px")
-              .style("top", event.pageY - 26 + "px");
-      })
-      .on("mouseout", () => {
-        tooltip.transition().duration(100).style("opacity", 0);
-      })
-      .transition()
-      .duration(700)
-      .delay((_, i) => i * 60) 
-      .ease(d3.easeCubicOut)
-      .attr("cy", d => yScale(d.transformedFollowers))
-      .attr("r", 12);
+    data.forEach((d, i) => {
+      const anchor = svg.append("a")
+        .attr("xlink:href", d.tweetUrl)
+        .attr("target", "_blank")
+        .attr("rel", "noopener noreferrer")
+        .attr("xmlns:xlink", "http://www.w3.org/1999/xlink"); // for older browsers
+    
+      anchor.append("circle")
+        .attr("class", "data-point")
+        .attr("cx", xScale(d.date))
+        .attr("cy", height - margin.bottom)
+        .attr("r", 0)
+        .style("fill", `url(#pattern-${i})`)
+        .attr("stroke", "#22C55E")
+        .attr("stroke-width", 1.5)
+        .on("mouseover", (event) => {
+          tooltip.transition().duration(150).style("opacity", 1);
+          tooltip.html(
+            `<div style="font-weight: bold; color: #22C55E;">@${d.username}</div>
+             <hr style="border: none; border-top: 1px solid #22C55E; margin: 6px;">
+             <div style="color: #fff;">${d.text}</div>
+             <div style="font-style: italic; color: #bbb; margin-top: 4px;">Followers: ${d.originalFollowers.toLocaleString()}</div>`
+          )
+          .style("left", event.pageX + 12 + "px")
+          .style("top", event.pageY - 26 + "px");
+        })
+        .on("mousemove", (event) => {
+          tooltip.style("left", event.pageX + 12 + "px")
+                 .style("top", event.pageY - 26 + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.transition().duration(100).style("opacity", 0);
+        })
+        .transition()
+        .duration(700)
+        .delay(i * 60)
+        .ease(d3.easeCubicOut)
+        .attr("cy", yScale(d.transformedFollowers))
+        .attr("r", 12);
+    });    
 
 
   }, [tweets]);
