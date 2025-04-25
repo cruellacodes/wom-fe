@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from "react";
 import ReactApexChart from "react-apexcharts";
 
+// A simple Tailwind CSS spinner
+const Loader = () => (
+  <div className="flex justify-center items-center py-6">
+    <div className="w-5 h-5 border-2 border-green-300 border-t-transparent animate-spin rounded-full" />
+    <span className="ml-2 text-sm text-green-300">Loading tweet volume...</span>
+  </div>
+);
+
 const RadarChart = ({ tokens }) => {
   const [seriesData, setSeriesData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   const categories = ["Hour -6", "Hour -5", "Hour -4", "Hour -3", "Hour -2", "Hour -1"];
+  const colorPalette = [
+    "#8A2BE2", "#FFD700", "#00BFFF", "#FF69B4", "#7FFF00", "#FF4500", "#00CED1"
+  ];
 
   useEffect(() => {
     if (!tokens || tokens.length === 0) return;
@@ -14,16 +25,24 @@ const RadarChart = ({ tokens }) => {
     setHasError(false);
 
     Promise.all(
-      tokens.map(token =>
+      tokens.map((token, index) =>
         fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-volume/?token_symbol=${encodeURIComponent(token.token_symbol)}`)
           .then(res => {
             if (!res.ok) throw new Error(`Error fetching volume for ${token.token_symbol}`);
             return res.json();
           })
           .then(data => {
-            const volumeObj = data.tweet_volume;
+            const volumeObj = data.tweet_volume || {};
             const volume = categories.map(cat => volumeObj[cat] ?? 0);
-            return { name: token.token_symbol, data: volume };
+
+            // Skip completely empty series (optional)
+            if (volume.every(v => v === 0)) return null;
+
+            return {
+              name: token.token_symbol,
+              data: volume,
+              color: colorPalette[index % colorPalette.length]
+            };
           })
           .catch(err => {
             console.error(err);
@@ -34,7 +53,7 @@ const RadarChart = ({ tokens }) => {
       .then(results => {
         const filtered = results.filter(r => r !== null);
         setSeriesData(filtered);
-        if (filtered.length === 0) setHasError(true);
+        setHasError(filtered.length === 0);
         setLoading(false);
       })
       .catch(err => {
@@ -72,19 +91,23 @@ const RadarChart = ({ tokens }) => {
     },
     stroke: {
       width: 2,
-      colors: ["#8A2BE2", "#FFD700", "#00BFFF"],
+      colors: seriesData.map(d => d.color),
     },
     fill: { opacity: 0.3 },
     markers: { size: 4 },
     legend: {
-      labels: { colors: ["#8A2BE2", "#FFD700", "#00BFFF"], fontSize: "10px" },
       position: "bottom",
       horizontalAlign: "center",
       floating: false,
-      useSeriesColors: true,
+      useSeriesColors: false,
       offsetY: 10,
       itemMargin: { top: 15 },
+      labels: {
+        colors: seriesData.map(d => d.color),
+        fontSize: "10px",
+      },
     },
+    colors: seriesData.map(d => d.color),
     tooltip: {
       theme: "dark",
       style: { fontSize: "11px" },
@@ -94,17 +117,15 @@ const RadarChart = ({ tokens }) => {
       borderColor: "rgba(255,255,255,0.2)",
       opacity: 0.8,
     },
-    colors: ["#8A2BE2", "#FFD700", "#00BFFF"],
   };
 
-  if (loading) return <div className="text-green-300 text-sm text-center py-4">Loading tweet volume...</div>;
-  if (hasError) return <div className="text-red-400 text-sm text-center py-4">Failed to load tweet volume data.</div>;
-  if (seriesData.length === 0) return <div className="text-gray-400 text-sm text-center py-4">No tweet volume data available.</div>;
+  if (loading) return <Loader />;
+  if (hasError) return <div className="text-red-400 text-sm text-center py-4">No tweet volume data available.</div>;
 
   return (
-    <div className="p-2 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg \
+    <div className="p-2 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
       bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto w-full h-auto">
-      <h2 className="text-s font-semibold text-green-300 text-center mb-0">
+      <h2 className="text-s font-semibold text-green-300 text-center mb-2">
         Tweet Volume (Last 6H)
       </h2>
 
