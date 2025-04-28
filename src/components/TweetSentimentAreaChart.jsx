@@ -1,123 +1,202 @@
-import React from "react";
+import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
-const StackedAreaChart = ({ tokens = [], tweets = [] }) => {
-  const now = new Date().getTime();
-  const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
+const DAY_MS = 86400000;
 
-  const chartData = tokens.map((token) => {
-    const tokenSymbol = token.token_symbol?.toLowerCase() || token.Token?.toLowerCase();
+/* helper: prepare data */
+function prepareData(tokens, tweets) {
+  const since = Date.now() - DAY_MS;
 
-    const tokenTweets = tweets.filter(
-      (tweet) =>
-        tweet.token_symbol === tokenSymbol &&
-        new Date(tweet.created_at).getTime() >= twentyFourHoursAgo
+  return tokens
+    .map((tk) => {
+      const symbol = (tk.token_symbol || tk.Token || "").toLowerCase();
+      if (!symbol) return null;
+
+      const scores = tweets
+        .filter(
+          (t) =>
+            t.token_symbol === symbol &&
+            new Date(t.created_at).getTime() >= since
+        )
+        .map((t) => +parseFloat(t.wom_score ?? 1).toFixed(2))
+        .sort((a, b) => a - b);
+
+      if (!scores.length) return null;
+
+      const mid = Math.floor(scores.length / 2);
+      const q1 = scores[Math.floor(scores.length / 4)];
+      const q3 = scores[Math.floor((scores.length * 3) / 4)];
+      const iqr = q3 - q1;
+      const lo = q1 - 1.5 * iqr;
+      const hi = q3 + 1.5 * iqr;
+
+      return {
+        x: symbol.toUpperCase(),
+        y: [scores[0], q1, scores[mid], q3, scores.at(-1)],
+        outliers: scores.filter((v) => v < lo || v > hi),
+      };
+    })
+    .filter(Boolean);
+}
+
+const StaackedAreaChart = ({ tokens = [], tweets = [] }) => {
+  const data = useMemo(() => prepareData(tokens, tweets), [tokens, tweets]);
+
+  if (!data.length) {
+    return (
+      <div className="flex flex-col items-center justify-center h-48 rounded-xl bg-[#0A0F0A]">
+        <div className="w-8 h-8 border-4 border-dashed rounded-full border-purple-500 animate-spin" />
+        <p className="mt-3 text-xs text-purple-300 animate-pulse">Loading data...</p>
+      </div>
     );
+  }
 
-    const seriesData = tokenTweets.map((tweet) => ({
-      x: new Date(tweet.created_at).getTime(),
-      y: parseFloat(tweet.wom_score?.toFixed(2) || 1.0),
-    }));
+  const series = [
+    { name: "Distribution", type: "boxPlot", data },
+    {
+      name: "Outliers",
+      type: "scatter",
+      data: data.flatMap((d) => d.outliers.map((y) => ({ x: d.x, y }))),
+    },
+  ].filter((s) => s.data.length);
 
-    return {
-      name: tokenSymbol.toUpperCase(),
-      data: seriesData.sort((a, b) => a.x - b.x),
-    };
-  }).filter(series => series.data.length > 0);
-
-  const chartOptions = {
+  const options = {
     chart: {
-      type: "area",
-      stacked: false,
-      zoom: { enabled: false },
-      toolbar: { show: false },
+      type: "boxPlot",
+      height: 320,
       background: "transparent",
-      animations: {
-        enabled: true,
-        easing: "easeinout",
-        speed: 700,
+      toolbar: { show: false },
+      animations: { enabled: true, speed: 700, easing: 'easeInOut' },
+    },
+    plotOptions: {
+      boxPlot: {
+        colors: {
+          upper: "#9d4edd",
+          lower: "#3b82f6",
+        },
+        lineWidth: 2,
       },
     },
-    colors: ["#22C55E", "#00E396", "#3B82F6", "#A855F7", "#F97316", "#F43F5E", "#06B6D4"],
-    stroke: { curve: "smooth", width: 2 },
-    dataLabels: { enabled: false },
-    fill: {
-      type: "gradient",
-      gradient: {
-        opacityFrom: 0.3,
-        opacityTo: 0.8,
+    colors: ["#9d4edd", "#ffdb58"],
+    stroke: {
+      width: 1,
+      curve: 'smooth',
+      colors: ["#e0e7ff"],
+    },
+    grid: {
+      borderColor: "#374151",
+      yaxis: {
+        lines: {
+          show: true,
+        },
+      },
+      xaxis: {
+        lines: {
+          show: false
+        }
+      }
+    },
+    tooltip: {
+      theme: "dark",
+      style: {
+        fontSize: '12px',
+        fontFamily: 'Monospace',
+      },
+      y: {
+        formatter: (v) => v.toFixed(2),
       },
     },
     xaxis: {
-      type: "datetime",
+      type: "category",
       title: {
-        text: "Time of Tweet (UTC)",
-        style: { color: "#ffffff", fontSize: "14px" },
+        text: "TOKEN",
+        style: {
+          color: "#6ee7b7",
+          fontWeight: 600,
+          fontSize: "12px",
+          fontFamily: 'Monospace',
+          textTransform: "uppercase",
+        },
       },
       labels: {
-        style: { colors: "#A3A3A3", fontSize: "12px" },
-        datetimeUTC: true,
+        style: {
+          colors: "#f9fafb",
+          fontSize: "12px",
+          fontFamily: 'Monospace',
+        },
+        rotate: -45,
+        rotateAlways: true,
+        offsetY: 10,
       },
-      min: twentyFourHoursAgo,
-      max: now,
+      axisBorder: { show: false },
+      axisTicks: { show: false },
     },
     yaxis: {
       min: 0,
       max: 2,
       tickAmount: 4,
       title: {
-        text: "WOM Score",
-        style: { color: "#ffffff", fontSize: "14px" },
+        text: "WOM SCORE",
+        style: {
+          color: "#6ee7b7",
+          fontWeight: 600,
+          fontSize: "12px",
+          fontFamily: 'Monospace',
+          textTransform: "uppercase",
+        },
       },
       labels: {
-        style: { colors: "#A3A3A3", fontSize: "12px" },
+        style: {
+          colors: "#f9fafb",
+          fontSize: "11px",
+          fontFamily: 'Monospace',
+        },
       },
-    },
-    grid: {
-      borderColor: "#333",
-      xaxis: { lines: { show: true } },
-      yaxis: { lines: { show: true } },
-    },
-    tooltip: {
-      theme: "dark",
-      x: { format: "dd MMM HH:mm" },
     },
     legend: {
-      position: "top",
-      horizontalAlign: "left",
-      labels: {
-        colors: "#22C55E",
-      },
+      show: false,
     },
+    markers: {
+      size: 6,
+      colors: ['#fef08a'],
+      strokeColors: '#3b82f6',
+      strokeWidth: 0,
+      hover: {
+        sizeOffset: 3
+      }
+    }
   };
 
   return (
-    <div className="p-6 rounded-xl text-green-300 shadow-lg bg-gradient-to-br from-[#0A0F0A] to-[#031715] backdrop-blur-md mt-8 transition-all duration-300">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-green-400 uppercase tracking-wide">
+    <div className="p-6 rounded-xl bg-[#0A0F0A] border-green-800/40 backdrop-blur-lg bg-opacity-90 shadow-lg transition-all duration-300">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-green-400 uppercase tracking-wide">
           Tweet Sentiment
         </h2>
-        <p className="text-xs text-gray-400 italic">
-          Each dot represents a tweet. The higher the dot, the more bullish the sentiment.
-        </p>
+        <a
+          href="/docs/BoxPlotDoc.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-green-400 hover:text-green-300 transition-colors"
+        >
+          <InformationCircleIcon className="w-6 h-6" />
+        </a>
       </div>
-      <div className="w-full h-[500px] flex justify-center items-center">
-        {chartData.length > 0 ? (
-          <div className="w-full h-full">
-            <ReactApexChart
-              options={chartOptions}
-              series={chartData}
-              type="area"
-              height="100%"
-              width="100%"
-            />
-          </div>
-        ) : (
-          <p className="text-center text-gray-400">No data available.</p>
-        )}
+
+      <div className="w-full">
+        <ReactApexChart
+          options={options}
+          series={series}
+          type="boxPlot"
+          height={320}
+        />
       </div>
+      <p className="mt-4 text-xs text-gray-500 text-center">
+        Distribution of WOM Sentiment Scores (Last 24 Hours)
+      </p>
     </div>
   );
 };
 
-export default StackedAreaChart;
+export default StaackedAreaChart;
