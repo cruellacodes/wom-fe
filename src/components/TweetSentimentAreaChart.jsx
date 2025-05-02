@@ -1,24 +1,30 @@
-import React, { useMemo } from "react";
-import ReactApexChart from "react-apexcharts";
+import React, { useMemo, useState } from "react";
+import ApexCharts from "react-apexcharts";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { motion } from "framer-motion";
 
 const DAY_MS = 86400000;
 
-/* helper: prepare data */
-function prepareData(tokens, tweets) {
+function prepareData(tokens, tweets, filter) {
   const since = Date.now() - DAY_MS;
 
-  return tokens
+  const topTokens = [...tokens]
+    .filter((t) => typeof t.wom_score === "number")
+    .sort((a, b) => b.wom_score - a.wom_score)
+    .slice(0, 20);
+
+  return topTokens
     .map((tk) => {
       const symbol = (tk.token_symbol || tk.Token || "").toLowerCase();
       if (!symbol) return null;
 
       const scores = tweets
-        .filter(
-          (t) =>
-            t.token_symbol === symbol &&
-            new Date(t.created_at).getTime() >= since
-        )
+        .filter((t) => {
+          const validTime = filter === "24h"
+            ? new Date(t.created_at).getTime() >= since
+            : true;
+          return t.token_symbol === symbol && validTime;
+        })
         .map((t) => +parseFloat(t.wom_score ?? 1).toFixed(2))
         .sort((a, b) => a - b);
 
@@ -40,20 +46,21 @@ function prepareData(tokens, tweets) {
     .filter(Boolean);
 }
 
-const StaackedAreaChart = ({ tokens = [], tweets = [] }) => {
-  const data = useMemo(() => prepareData(tokens, tweets), [tokens, tweets]);
+const StackedAreaChart = ({ tokens = [], tweets = [] }) => {
+  const [filter, setFilter] = useState("24h");
+  const data = useMemo(() => prepareData(tokens, tweets, filter), [tokens, tweets, filter]);
 
   if (!data.length) {
     return (
-      <div className="flex flex-col items-center justify-center h-48 rounded-xl bg-[#0A0F0A]">
-        <div className="w-8 h-8 border-4 border-dashed rounded-full border-purple-500 animate-spin" />
-        <p className="mt-3 text-xs text-purple-300 animate-pulse">Loading data...</p>
+      <div className="flex flex-col items-center justify-center h-48 rounded-xl bg-gradient-to-br from-gray-900 via-gray-950 to-black animate-pulse">
+        <div className="w-10 h-10 border-4 border-dashed rounded-full border-purple-400 animate-spin" />
+        <p className="mt-4 text-sm text-purple-300">Analyzing data...</p>
       </div>
     );
   }
 
   const series = [
-    { name: "Distribution", type: "boxPlot", data },
+    { name: "Sentiment", type: "boxPlot", data },
     {
       name: "Outliers",
       type: "scatter",
@@ -67,44 +74,70 @@ const StaackedAreaChart = ({ tokens = [], tweets = [] }) => {
       height: 320,
       background: "transparent",
       toolbar: { show: false },
-      animations: { enabled: true, speed: 700, easing: 'easeInOut' },
+      dropShadow: {
+        enabled: true,
+        top: 3,
+        left: 0,
+        blur: 10,
+        opacity: 0.15,
+      },
+      animations: {
+        enabled: true,
+        speed: 800,
+        easing: "easeOutQuad",
+      },
     },
     plotOptions: {
       boxPlot: {
         colors: {
-          upper: "#9d4edd",
-          lower: "#3b82f6",
+          upper: "#a855f7",
+          lower: "#8b5cf6",
         },
         lineWidth: 2,
+        medianStroke: "#fff",
+        boxShadow: {
+          enabled: true,
+          color: "rgba(107, 114, 128, 0.1)",
+          blur: 8,
+          offsetY: 2,
+          opacity: 1,
+        },
       },
     },
-    colors: ["#9d4edd", "#ffdb58"],
+    colors: ["#e070fa", "#fde047"],
     stroke: {
       width: 1,
-      curve: 'smooth',
-      colors: ["#e0e7ff"],
+      curve: "smooth",
+      colors: ["#f9fafb"],
     },
     grid: {
       borderColor: "#374151",
       yaxis: {
         lines: {
           show: true,
+          color: "#4a5568",
         },
       },
       xaxis: {
         lines: {
-          show: false
-        }
-      }
+          show: false,
+        },
+      },
     },
     tooltip: {
       theme: "dark",
       style: {
-        fontSize: '12px',
-        fontFamily: 'Monospace',
+        fontSize: "12px",
+        fontFamily:
+          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
       },
       y: {
         formatter: (v) => v.toFixed(2),
+      },
+      x: {
+        title: {
+          formatter: (v) => `Token: ${v}`,
+        },
       },
     },
     xaxis: {
@@ -112,22 +145,24 @@ const StaackedAreaChart = ({ tokens = [], tweets = [] }) => {
       title: {
         text: "TOKEN",
         style: {
-          color: "#6ee7b7",
-          fontWeight: 600,
-          fontSize: "12px",
-          fontFamily: 'Monospace',
+          color: "#e0f2fe",
+          fontWeight: 500,
+          fontSize: "14px",
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
           textTransform: "uppercase",
         },
       },
       labels: {
         style: {
-          colors: "#f9fafb",
+          colors: "#f5f5f5",
           fontSize: "12px",
-          fontFamily: 'Monospace',
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
         },
-        rotate: -45,
+        rotation: -45,
         rotateAlways: true,
-        offsetY: 10,
+        offsetY: 12,
       },
       axisBorder: { show: false },
       axisTicks: { show: false },
@@ -137,20 +172,22 @@ const StaackedAreaChart = ({ tokens = [], tweets = [] }) => {
       max: 2,
       tickAmount: 4,
       title: {
-        text: "WOM SCORE",
+        text: "SENTIMENT",
         style: {
-          color: "#6ee7b7",
-          fontWeight: 600,
-          fontSize: "12px",
-          fontFamily: 'Monospace',
+          color: "#e0f2fe",
+          fontWeight: 500,
+          fontSize: "14px",
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
           textTransform: "uppercase",
         },
       },
       labels: {
         style: {
-          colors: "#f9fafb",
-          fontSize: "11px",
-          fontFamily: 'Monospace',
+          colors: "#f5f5f5",
+          fontSize: "12px",
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
         },
       },
     },
@@ -158,45 +195,78 @@ const StaackedAreaChart = ({ tokens = [], tweets = [] }) => {
       show: false,
     },
     markers: {
-      size: 6,
-      colors: ['#fef08a'],
-      strokeColors: '#3b82f6',
+      size: 7,
+      colors: ["#fef08a"],
+      strokeColors: "transparent",
       strokeWidth: 0,
       hover: {
-        sizeOffset: 3
-      }
-    }
+        sizeOffset: 3,
+        fillColor: "#fff",
+        strokeColor: "#fef08a",
+        strokeWidth: 1.5,
+      },
+    },
+    states: {
+      hover: {
+        filter: {
+          type: "none",
+        },
+      },
+    },
   };
 
+  const containerClassName = "pt-10 px-2 sm:px-6 w-full";
+
   return (
-    <div className="p-6 rounded-xl bg-[#0A0F0A] border-green-800/40 backdrop-blur-lg bg-opacity-90 shadow-lg transition-all duration-300">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+      className={containerClassName}
+    >
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-green-400 uppercase tracking-wide">
-          Tweet Sentiment
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-wide uppercase text-white">
+          <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
+            Token Sentiment
+          </span>
         </h2>
         <a
-          href="/docs/BoxPlotDoc.md"
+          href="https://github.com/cruellacodes/wom-fe/blob/main/src/docs/BoxPlotDoc.md"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-green-400 hover:text-green-300 transition-colors"
+          className="group"
         >
-          <InformationCircleIcon className="w-6 h-6" />
+          <InformationCircleIcon className="w-6 h-6 text-gray-400 group-hover:text-blue-400 transition-colors duration-200" />
         </a>
       </div>
 
-      <div className="w-full">
-        <ReactApexChart
-          options={options}
-          series={series}
-          type="boxPlot"
-          height={320}
-        />
+      <div className="flex justify-end gap-2 mb-4">
+        {["24h", "all"].map((val) => (
+          <button
+            key={val}
+            onClick={() => setFilter(val)}
+            className={`px-3 py-1 text-sm border rounded-md transition-all
+              ${filter === val
+                ? "border-green-400 text-green-300 bg-green-900/30"
+                : "border-green-800 text-green-500 hover:border-green-600 hover:text-green-300"}`}
+          >
+            {val === "all" ? "All Time" : "Last 24h"}
+          </button>
+        ))}
       </div>
-      <p className="mt-4 text-xs text-gray-500 text-center">
-        Distribution of WOM Sentiment Scores (Last 24 Hours)
+
+      <div className="w-full">
+        <div id="chart">
+          <ApexCharts options={options} series={series} type="boxPlot" height={320} />
+        </div>
+      </div>
+
+      <p className="mt-6 text-xs text-center text-gray-400">
+        Sentiment distribution across top 20 tokens
+        {filter === "24h" ? " (past 24h)" : " (all time)"}
       </p>
-    </div>
+    </motion.div>
   );
 };
 
-export default StaackedAreaChart;
+export default StackedAreaChart;
