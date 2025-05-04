@@ -1,53 +1,70 @@
-// eslint-disable-next-line no-unused-vars
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import React, { useMemo, useState } from "react";
 import ApexCharts from "react-apexcharts";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 
-const DAY_MS = 86400000;
+const TIME_FILTERS = {
+  "24h": 86400000,
+  all: null,
+};
 
 function prepareData(tokens, tweets, filter) {
-  const since = Date.now() - DAY_MS;
+  const since = filter === "24h" ? Date.now() - 86400000 : null;
 
   const topTokens = [...tokens]
     .filter((t) => typeof t.wom_score === "number")
     .sort((a, b) => b.wom_score - a.wom_score)
-    .slice(0, 20);
+    .slice(0, 10);
 
   return topTokens
     .map((tk) => {
       const symbol = (tk.token_symbol || tk.Token || "").toLowerCase();
       if (!symbol) return null;
 
-      const scores = tweets
-        .filter((t) => {
-          const validTime = filter === "24h"
-            ? new Date(t.created_at).getTime() >= since
-            : true;
-          return t.token_symbol === symbol && validTime;
-        })
-        .map((t) => +parseFloat(t.wom_score ?? 1).toFixed(2))
+      const matchingTweets = tweets.filter((t) => {
+        const tokenMatch = (t.token_symbol || "").toLowerCase() === symbol;
+        const timeValid = since ? new Date(t.created_at).getTime() >= since : true;
+        return tokenMatch && timeValid;
+      });
+      
+      const parsedScores = matchingTweets
+        .map((t) => parseFloat(t.wom_score))
+        .filter((s) => !isNaN(s))
         .sort((a, b) => a - b);
 
-      if (!scores.length) return null;
+        if (symbol === "$trump") {
+          console.log("💬 $TRUMP parsed scores", parsedScores);
+        }
 
-      const mid = Math.floor(scores.length / 2);
-      const q1 = scores[Math.floor(scores.length / 4)];
-      const q3 = scores[Math.floor((scores.length * 3) / 4)];
-      const iqr = q3 - q1;
-      const lo = q1 - 1.5 * iqr;
-      const hi = q3 + 1.5 * iqr;
+      if (!parsedScores.length) return null;
+
+      const fallbackValue = parsedScores[0];
+      const mid = Math.floor(parsedScores.length / 2);
+      const q1 = parsedScores[Math.floor(parsedScores.length / 4)];
+      const q3 = parsedScores[Math.floor((parsedScores.length * 3) / 4)];
+      const iqr = (q3 ?? fallbackValue) - (q1 ?? fallbackValue);
+      const lo = (q1 ?? fallbackValue) - 1.5 * iqr;
+      const hi = (q3 ?? fallbackValue) + 1.5 * iqr;
 
       return {
         x: symbol.toUpperCase(),
-        y: [scores[0], q1, scores[mid], q3, scores.at(-1)],
-        outliers: scores.filter((v) => v < lo || v > hi),
+        y: [
+          parsedScores[0] ?? fallbackValue,
+          q1 ?? fallbackValue,
+          parsedScores[mid] ?? fallbackValue,
+          q3 ?? fallbackValue,
+          parsedScores.at(-1) ?? fallbackValue,
+        ],
+        outliers: parsedScores.filter((v) => v < lo || v > hi),
       };
     })
     .filter(Boolean);
 }
 
-// eslint-disable-next-line react/prop-types
+
+
 const TokenSentimentChart = ({ tokens = [], tweets = [] }) => {
   const [filter, setFilter] = useState("24h");
   const data = useMemo(() => prepareData(tokens, tweets, filter), [tokens, tweets, filter]);
@@ -68,7 +85,7 @@ const TokenSentimentChart = ({ tokens = [], tweets = [] }) => {
       type: "scatter",
       data: data.flatMap((d) => d.outliers.map((y) => ({ x: d.x, y }))),
     },
-  ].filter((s) => s.data.length);
+  ].filter((s) => s.data.length > 0);
 
   const options = {
     chart: {
@@ -83,7 +100,7 @@ const TokenSentimentChart = ({ tokens = [], tweets = [] }) => {
           upper: "#a855f7",
           lower: "#8b5cf6",
         },
-        medianStroke: "#fff",
+        median: { strokeColor: "#fff", strokeWidth: 2 },
       },
     },
     colors: ["#e070fa", "#fde047"],
@@ -130,7 +147,7 @@ const TokenSentimentChart = ({ tokens = [], tweets = [] }) => {
       </div>
 
       <div className="flex justify-end gap-2 mb-4">
-        {["24h", "all"].map((val) => (
+        {Object.keys(TIME_FILTERS).map((val) => (
           <button
             key={val}
             onClick={() => setFilter(val)}

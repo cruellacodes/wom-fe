@@ -1,10 +1,12 @@
+/* eslint-disable react/prop-types */
 import { useState, useRef, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
 import React from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-dayjs.extend(utc);
+import { motion, AnimatePresence } from "framer-motion";
+import { Toaster } from "react-hot-toast";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -20,12 +22,34 @@ import TwitterScan from "./components/TwitterScan";
 
 import { useSupabaseSubscriptions } from "./hooks/useSupabaseSubscriptions";
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
-import { Toaster } from "react-hot-toast";
+
+dayjs.extend(utc);
+
+function ChartToggle({ show, onToggle }) {
+  return (
+    <div className="flex justify-center mt-6 mb-2">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 text-sm text-green-400 border border-green-500 px-4 py-2 rounded hover:bg-green-900 transition"
+      >
+        {show ? "Hide Charts" : "Show Charts"}
+        <span
+          className={`transform transition-transform duration-300 ${
+            show ? "rotate-180" : ""
+          }`}
+        >
+          ▼
+        </span>
+      </button>
+    </div>
+  );
+}
 
 function App() {
   const [searchedToken, setSearchedToken] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredTweets, setFilteredTweets] = useState([]);
+  const [showCharts, setShowCharts] = useState(true);
 
   const tokenInfoRef = useRef(null);
   const leaderboardRef = useRef(null);
@@ -38,14 +62,15 @@ function App() {
     dayjs.utc(t.created_at).isAfter(nowUtc.subtract(24, "hour"))
   );
 
-  const topTweetTokens = getTopTokensByTweetCount(tokens, 3, tweets, 24); //last 24h
+  const topTweetTokens = getTopTokensByTweetCount(tokens, 3, tweets, 24); // last 24h
   const topWomTokens = getTopTokensByWomScore(tokens, 5);
 
   useEffect(() => {
     if (!searchedToken && tokens.length > 0 && tweets.length > 0) {
       const tokenWithTweets = tokens.find((token) =>
         tweets.some(
-          (t) => t.token_symbol?.toLowerCase() === token.token_symbol?.toLowerCase()
+          (t) =>
+            t.token_symbol?.toLowerCase() === token.token_symbol?.toLowerCase()
         )
       );
       if (tokenWithTweets) {
@@ -97,18 +122,37 @@ function App() {
               }
             />
 
-            <div className="max-w-7xl mx-auto px-6 mt-8 mb-8 grid md:grid-cols-3 gap-4">
-              <RadarChart
-                tokens={topTweetTokens}
-                tweets={tweetsLast24h.filter((t) =>
-                  topTweetTokens.some(
-                    (token) => token.token_symbol?.toLowerCase() === t.token_symbol?.toLowerCase()
-                  )
-                )}
-              />
-              <Podium tokens={topTweetTokens} />
-              <PolarChart tokens={topWomTokens} />
-            </div>
+            <ChartToggle
+              show={showCharts}
+              onToggle={() => setShowCharts((prev) => !prev)}
+            />
+
+            <AnimatePresence>
+              {showCharts && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="overflow-hidden"
+                >
+                  <div className="max-w-7xl mx-auto px-6 mt-4 mb-8 grid md:grid-cols-3 gap-4">
+                    <RadarChart
+                      tokens={topTweetTokens}
+                      tweets={tweetsLast24h.filter((t) =>
+                        topTweetTokens.some(
+                          (token) =>
+                            token.token_symbol?.toLowerCase() ===
+                            t.token_symbol?.toLowerCase()
+                        )
+                      )}
+                    />
+                    <Podium tokens={topTweetTokens} />
+                    <PolarChart tokens={topWomTokens} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div ref={tokenInfoRef} className="max-w-3xl mx-auto px-4 mb-4">
               <TokenSearch

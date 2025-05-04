@@ -179,7 +179,11 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       .style("font-size", "12px")
       .style("pointer-events", "none")
       .style("opacity", 0)
-      .style("max-width", "260px");
+      .style("max-width", "260px")
+      .style("word-wrap", "break-word")           
+      .style("white-space", "normal")             
+      .style("overflow-wrap", "break-word");     
+
 
     data.forEach((d, i) => {
       defs

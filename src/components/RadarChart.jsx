@@ -48,7 +48,7 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
       if (counts.every((v) => v === 0)) return null;
 
       return {
-        name: `$${symbol}`,
+        name: `${symbol}`,
         data: counts,
         color: colorPalette[idx % colorPalette.length],
       };
@@ -62,10 +62,11 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
       type: "radar",
       background: "transparent",
       toolbar: { show: false },
+      offsetY: -10,
     },
     plotOptions: {
       radar: {
-        size: 90,
+        size: 95,
         polygons: {
           strokeColors: "rgba(255,255,255,0.3)",
           fill: {
@@ -89,16 +90,27 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
     markers: { size: 4 },
     legend: {
       position: "bottom",
+      horizontalAlign: "center", 
+      offsetY: 30,
+      fontSize: "13px",
+      itemMargin: {
+        horizontal: 10,
+        vertical: 35,
+      },
       labels: {
         colors: "#22C55E",
         useSeriesColors: true,
       },
     },
+    
     colors: seriesData.map((s) => s.color),
     tooltip: {
       theme: "dark",
       style: { fontSize: "11px" },
       fillSeriesColor: false,
+      markers: {
+        size: 2,
+      },
     },
   };
 
@@ -107,8 +119,8 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
-      className="p-3 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
-        bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto w-full"
+      className="p-3 pb-6 min-h-[230px] rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
+      bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto w-full"
     >
       <h2 className="text-sm font-semibold text-green-300 text-center mb-1">
         Tweet Pulse (Last 6H UTC)
@@ -118,7 +130,7 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
       </p>
 
       {seriesData.length > 0 ? (
-        <div className="w-[90%] mx-auto">
+        <div className="w-full mx-auto min-h-[230px] overflow-visible">
           <ReactApexChart
             options={chartOptions}
             series={seriesData}

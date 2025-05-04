@@ -6,7 +6,7 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
-import TweetSentimentAreaChart from "./TweetSentimentAreaChart";
+import TokenSentimentChart from "./TokenSentimentChart";
 import { AiOutlineLineChart } from "react-icons/ai";
 
 const PAGE_SIZE = 20;
@@ -15,7 +15,7 @@ const Leaderboard = ({
   tokens = [],
   tweets = [],
   onTokenClick,
-  setScrollTweetSentimentAreaChart,
+  setScrollTokenSentimentChart,
   page,
   onPageChange,
 }) => {
@@ -23,18 +23,18 @@ const Leaderboard = ({
   const [sortOrder, setSortOrder] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState("5d");
-  const TweetSentimentAreaChartRef = useRef(null);
+  const TokenSentimentChartRef = useRef(null);
 
   useEffect(() => {
-    if (setScrollTweetSentimentAreaChart) {
-      setScrollTweetSentimentAreaChart(() => () => {
-        TweetSentimentAreaChartRef.current?.scrollIntoView({
+    if (setScrollTokenSentimentChart) {
+      setScrollTokenSentimentChart(() => () => {
+        TokenSentimentChartRef.current?.scrollIntoView({
           behavior: "smooth",
           block: "start",
         });
       });
     }
-  }, [setScrollTweetSentimentAreaChart]);
+  }, [setScrollTokenSentimentChart]);
 
   const sortedTokens = [...tokens].sort((a, b) => {
     const aVal = a[sortBy];
@@ -258,8 +258,8 @@ const Leaderboard = ({
         </button>
       </div>
 
-      <div ref={TweetSentimentAreaChartRef} className="mt-10">
-        <TweetSentimentAreaChart tokens={tokens} tweets={tweets} />
+      <div ref={TokenSentimentChartRef} className="mt-10">
+        <TokenSentimentChart tokens={tokens} tweets={tweets} />
       </div>
     </div>
   );
