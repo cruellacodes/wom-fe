@@ -1,133 +1,122 @@
-import { Bars3Icon, XMarkIcon, BoltIcon } from "@heroicons/react/24/solid";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  TrophyIcon,
+  ChartBarIcon,
+  BookOpenIcon,
+} from "@heroicons/react/24/outline";
 // eslint-disable-next-line no-unused-vars
 import React, { useState } from "react";
-import Logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
+import Logo from "../assets/logo.png";
 
-// eslint-disable-next-line no-empty-pattern
-const Header = ({  }) => {
+const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleScrollRedirect = (target) => {
-    setMenuOpen(false);
-    setTimeout(() => {
-      navigate("/", { state: { scrollTo: target } });
-    }, 100);
-  };
-
-  const mobileNavItems = [
+  const navItems = [
     {
+      icon: <TrophyIcon className="w-5 h-5" />,
       label: "Leaderboard",
-      action: () => handleScrollRedirect("leaderboard"),
+      action: () => navigate("/", { state: { scrollTo: "leaderboard" } }),
     },
     {
+      icon: <ChartBarIcon className="w-5 h-5" />,
       label: "Sentiment",
-      action: () => handleScrollRedirect("sentiment"),
+      action: () => navigate("/", { state: { scrollTo: "sentiment" } }),
     },
     {
+      icon: <BookOpenIcon className="w-5 h-5" />,
       label: "How it works",
-      action: () => {
-        setMenuOpen(false);
-        navigate("/about");
-      },
-    },
-    {
-      label: "TwitterScan",
-      action: () => {
-        setMenuOpen(false);
-        navigate("/twitterscan");
-      },
+      action: () => navigate("/about"),
     },
   ];
 
   return (
-    <header className="relative flex items-center justify-between px-6 py-4 text-green-300 shadow-xl backdrop-blur-xl bg-black/80 border-b border-green-800/20 z-50">
-      
-      {/* Left Side - Clickable Logo */}
-      <div
-        className="flex items-center cursor-pointer transition hover:opacity-90"
-        onClick={() => navigate("/")}
-      >
-        <img src={Logo} alt="Logo" className="w-28 h-28 object-contain" />
-      </div>
+    <header className="w-full px-6 md:px-10 py-4 bg-black text-white z-40">
+      <div className="flex items-center justify-between relative">
+        {/* Logo */}
+        <div
+          onClick={() => navigate("/")}
+          className="flex items-center cursor-pointer hover:opacity-90 transition"
+        >
+          <img src={Logo} alt="Logo" className="w-24 h-24 object-contain" />
+        </div>
 
-      {/* Center - Live Indicator */}
-      <div className="absolute left-1/2 transform -translate-x-1/2">
-        <div className="flex items-center gap-2 px-5 py-1.5 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 border border-green-500/10 shadow-xl text-sm font-semibold text-green-300 uppercase tracking-wide 
-          hover:scale-110 active:scale-95 transition duration-300 animate-pulse">
-          <BoltIcon className="w-4 h-4 text-yellow-300 animate-spin-slow" />
-          <span className="text-base font-bold text-yellow-300">LIVE</span>
-          <span className="relative flex items-center">
-            <span className="relative w-2.5 h-2.5 bg-green-500 rounded-full">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75 animate-ping"></span>
+        {/* LIVE Badge */}
+        <div className="absolute left-1/2 -translate-x-1/2">
+          <div className="flex items-center gap-2 px-4 py-1 bg-gradient-to-r from-yellow-900/40 via-zinc-900 to-green-800/40 rounded shadow-inner border border-yellow-500/20 animate-pulse-fast">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75 animate-ping-slow"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-300 shadow-[0_0_6px_#facc15]"></span>
             </span>
-          </span>
+            <span className="text-xs font-mono text-[#00FF00] tracking-widest animate-glow">
+              LIVE
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Right Side - Desktop & Mobile Nav */}
-      <div className="flex items-center gap-4">
+        {/* Desktop Nav & CTA */}
+        <div className="hidden md:flex items-center gap-6">
+          {navItems.map(({ icon, label, action }) => (
+            <button
+              key={label}
+              onClick={action}
+              className="flex items-center gap-2 text-sm text-zinc-300 hover:text-white transition"
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
 
-        {/* Desktop Buttons */}
-        <div className="hidden md:flex gap-4">
+          {/* TwitterScan Terminal Button */}
           <button
-            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
             onClick={() => navigate("/twitterscan")}
+            className="px-4 py-2 font-mono bg-black hover:bg-green-500/5 rounded-md tracking-widest text-sm border border-transparent transition text-[#00FF00] w-[22ch]"
           >
-            <span className="text-sm text-green-300">TwitterScan</span>
-          </button>
-
-          <button
-            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
-            onClick={() => navigate("/about")}
-          >
-            <span className="text-sm text-green-300">How it works</span>
-          </button>
-
-          <button
-            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
-            onClick={() => handleScrollRedirect("leaderboard")}
-          >
-            <span className="text-sm text-green-300">Leaderboard</span>
-          </button>
-
-          <button
-            className="px-6 py-2 rounded-lg bg-gradient-to-br from-green-800/30 to-green-900/10 backdrop-blur-md border border-green-700/20 shadow-lg hover:shadow-green-500/30 transition-all duration-300 ease-in-out flex items-center hover:scale-105 active:scale-95"
-            onClick={() => handleScrollRedirect("sentiment")}
-          >
-            <span className="text-sm text-green-300">Sentiment</span>
+            <span className="flex items-center gap-1">
+              <span>&gt;_</span>
+              <span className="relative block">
+                <span className="typewriter">EXEC TWITTERSCAN</span>
+              </span>
+            </span>
           </button>
         </div>
 
-        {/* Mobile Menu Toggle */}
+        {/* Mobile Toggle */}
         <button
-          className="block md:hidden p-2 bg-green-900/20 rounded-lg hover:bg-green-800/40 transition duration-300"
+          className="md:hidden p-2 hover:bg-zinc-800 rounded"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? (
-            <XMarkIcon className="w-6 h-6 text-green-300" />
+            <XMarkIcon className="w-6 h-6 text-white" />
           ) : (
-            <Bars3Icon className="w-6 h-6 text-green-300" />
+            <Bars3Icon className="w-6 h-6 text-white" />
           )}
         </button>
       </div>
 
-      {/* Mobile Dropdown Menu */}
+      {/* Mobile Dropdown */}
       {menuOpen && (
-        <div className="absolute top-16 right-6 w-52 z-50 bg-gradient-to-br from-black/90 to-green-900/20 backdrop-blur-lg border border-green-700/20 shadow-2xl rounded-lg md:hidden transition-all duration-300 ease-in-out">
-          <ul className="flex flex-col">
-            {mobileNavItems.map((item) => (
-              <li key={item.label}>
-                <button
-                  className="w-full text-left px-6 py-3 text-green-300 hover:bg-green-800/40 transition duration-300"
-                  onClick={item.action}
-                >
-                  {item.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="md:hidden mt-4 flex flex-col gap-3 text-sm text-zinc-300">
+          {navItems.map(({ icon, label, action }) => (
+            <button
+              key={label}
+              onClick={action}
+              className="flex items-center gap-2 hover:text-white transition"
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
+          <button
+            onClick={() => navigate("/twitterscan")}
+            className="flex items-center gap-2 px-4 py-2 border border-transparent text-green-300 hover:bg-green-500/10 hover:text-white transition rounded-md font-mono text-sm tracking-widest"
+          >
+            <span className="flex items-center whitespace-nowrap">
+              <span className="overflow-hidden whitespace-nowrap typewriter-mobile">&gt;_ EXEC TWITTERSCAN</span>
+            </span>
+          </button>
         </div>
       )}
     </header>
