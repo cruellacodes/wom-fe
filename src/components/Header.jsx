@@ -1,3 +1,6 @@
+// eslint-disable-next-line no-unused-vars
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -5,9 +8,6 @@ import {
   ChartBarIcon,
   BookOpenIcon,
 } from "@heroicons/react/24/outline";
-// eslint-disable-next-line no-unused-vars
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Logo from "../assets/logo.png";
 
 const Header = () => {
@@ -62,7 +62,7 @@ const Header = () => {
             <button
               key={label}
               onClick={action}
-              className="flex items-center gap-2 text-sm text-zinc-300 hover:text-white transition"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition rounded-md cursor-pointer"
             >
               {icon}
               {label}
@@ -72,14 +72,9 @@ const Header = () => {
           {/* TwitterScan Terminal Button */}
           <button
             onClick={() => navigate("/twitterscan")}
-            className="px-4 py-2 font-mono bg-black hover:bg-green-500/5 rounded-md tracking-widest text-sm border border-transparent transition text-[#00FF00] w-[22ch]"
+            className="px-4 py-2 font-mono tracking-widest text-sm text-[#00FF00] bg-[#002b00] hover:bg-[#004400] rounded-md transition cursor-pointer"
           >
-            <span className="flex items-center gap-1">
-              <span>&gt;_</span>
-              <span className="relative block">
-                <span className="typewriter">EXEC TWITTERSCAN</span>
-              </span>
-            </span>
+            &gt;_ EXEC TWITTERSCAN
           </button>
         </div>
 
@@ -103,7 +98,7 @@ const Header = () => {
             <button
               key={label}
               onClick={action}
-              className="flex items-center gap-2 hover:text-white transition"
+              className="flex items-center gap-2 px-3 py-2 rounded hover:text-white hover:bg-white/10 transition cursor-pointer"
             >
               {icon}
               {label}
@@ -111,11 +106,9 @@ const Header = () => {
           ))}
           <button
             onClick={() => navigate("/twitterscan")}
-            className="flex items-center gap-2 px-4 py-2 border border-transparent text-green-300 hover:bg-green-500/10 hover:text-white transition rounded-md font-mono text-sm tracking-widest"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-mono tracking-widest text-[#00FF00] bg-[#002b00] hover:bg-[#004400] rounded-md transition cursor-pointer"
           >
-            <span className="flex items-center whitespace-nowrap">
-              <span className="overflow-hidden whitespace-nowrap typewriter-mobile">&gt;_ EXEC TWITTERSCAN</span>
-            </span>
+            &gt;_ EXEC TWITTERSCAN
           </button>
         </div>
       )}
