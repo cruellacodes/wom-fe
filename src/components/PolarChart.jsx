@@ -1,11 +1,14 @@
+// eslint-disable-next-line no-unused-vars
 import React from "react";
 import ReactApexChart from "react-apexcharts";
+import { motion } from "framer-motion";
 
-const PolarChart = ({ tokens }) => {
-  // Ensure we handle missing or malformed data safely
-  const filteredTokens = tokens.filter(
-    (token) => token.token_symbol && typeof token.wom_score === "number"
-  );
+// eslint-disable-next-line react/prop-types
+const PolarChart = ({ tokens = [] }) => {
+  const filteredTokens = tokens
+    .filter((token) => token.token_symbol && typeof token.wom_score === "number")
+    .sort((a, b) => b.wom_score - a.wom_score)
+    .slice(0, 5);
 
   const tokenLabels = filteredTokens.map((token) => token.token_symbol);
   const tokenSeries = filteredTokens.map((token) => token.wom_score);
@@ -19,8 +22,8 @@ const PolarChart = ({ tokens }) => {
     },
     labels: tokenLabels,
     fill: {
-      opacity: 0.85,
-      colors: ["#22C55E"],
+      opacity: 0.75,
+      colors: Array(tokenLabels.length).fill("#22C55E"),
     },
     stroke: {
       colors: ["#000"],
@@ -29,22 +32,16 @@ const PolarChart = ({ tokens }) => {
       labels: { style: { colors: "#A3A3A3", fontSize: "10px" } },
     },
     legend: {
-      labels: { colors: "#22C55E" },
       position: "bottom",
-      fontSize: "10px",
+      labels: {
+        colors: "#22C55E",
+        useSeriesColors: false,
+      },
     },
     plotOptions: {
       polarArea: {
         rings: { strokeWidth: 1 },
         spokes: { strokeWidth: 1 },
-      },
-    },
-    theme: {
-      monochrome: {
-        enabled: true,
-        color: "#22C55E",
-        shadeTo: "dark",
-        shadeIntensity: 0.7,
       },
     },
     tooltip: {
@@ -54,12 +51,19 @@ const PolarChart = ({ tokens }) => {
   };
 
   return (
-    <div className="p-2 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
-      bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto"
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
+      className="p-3 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
+        bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto w-full"
     >
       <h2 className="text-sm font-semibold text-green-300 text-center mb-1">
-        Top 5 Tokens by WOM Score
+        Hottest WOM Scores
       </h2>
+      <p className="text-center text-gray-400 text-xs italic mb-3">
+        Based on latest tweet sentiment
+      </p>
 
       {tokenSeries.length > 0 ? (
         <div className="w-[90%] mx-auto">
@@ -67,13 +71,13 @@ const PolarChart = ({ tokens }) => {
             options={chartOptions}
             series={tokenSeries}
             type="polarArea"
-            height={255}
+            height={230}
           />
         </div>
       ) : (
         <p className="text-center text-gray-400 text-sm mt-6">No data available.</p>
       )}
-    </div>
+    </motion.div>
   );
 };
 

@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -10,6 +11,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { PlusIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { supabase } from "../lib/supabaseClient";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
@@ -17,80 +19,108 @@ const TwitterScan = () => {
   const [watchlist, setWatchlist] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [tokenOptions, setTokenOptions] = useState([]);
-  const [loadingToken, setLoadingToken] = useState(false);
+  const [filteredOptions, setFilteredOptions] = useState([]);
+  const [, setLoadingToken] = useState(false);
   const [searchInput, setSearchInput] = useState("");
 
   useEffect(() => {
     const fetchTokens = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tokens?only_active=true`);
-        const data = await res.json();
-        if (data?.tokens) setTokenOptions(data.tokens);
+        const { data, error } = await supabase
+          .from("tokens")
+          .select("token_symbol, token_name")
+          .eq("is_active", true);
+
+        if (error) throw error;
+        if (data) {
+          setTokenOptions(data);
+          setFilteredOptions(data);
+        }
       } catch (err) {
-        console.error("Error fetching tokens:", err);
+        console.error("Error fetching tokens from Supabase:", err);
       }
     };
     fetchTokens();
   }, []);
 
-  const fetchTokenBuckets = async (token_symbol) => {
-    const encoded_symbol = encodeURIComponent(token_symbol);
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweet-buckets/?token_symbol=${encoded_symbol}`);
-    const data = await res.json();
-    return data?.bucket_data || null;
+  const groupIntoBuckets = (tweets) => {
+    const now = Date.now();
+    const buckets = {
+      "1h": 0,
+      "6h": 0,
+      "12h": 0,
+      "24h": 0,
+      "48h": 0,
+    };
+
+    tweets.forEach((tweet) => {
+      const ageMs = now - new Date(tweet.created_at).getTime();
+      const ageH = ageMs / (1000 * 60 * 60);
+      if (ageH <= 1) buckets["1h"]++;
+      if (ageH <= 6) buckets["6h"]++;
+      if (ageH <= 12) buckets["12h"]++;
+      if (ageH <= 24) buckets["24h"]++;
+      if (ageH <= 48) buckets["48h"]++;
+    });
+
+    return buckets;
   };
 
   const fetchLiveBuckets = async (token_symbol) => {
-    const encoded_symbol = encodeURIComponent(token_symbol);
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/live-tweet-buckets/?token_symbol=${encoded_symbol}`);
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/live-tweet-buckets/?token_symbol=${encodeURIComponent(token_symbol)}`
+    );
     const data = await res.json();
     return data?.bucket_data || null;
   };
 
-  const handleSelectToken = async (token_symbol, isLive = false) => {
+  const handleSelectToken = async (token_symbol) => {
     if (watchlist.some((t) => t.token === token_symbol)) return;
     setLoadingToken(true);
 
     try {
-      const buckets = isLive
-        ? await fetchLiveBuckets(token_symbol)
-        : await fetchTokenBuckets(token_symbol);
+      const { data: tweets } = await supabase
+        .from("tweets")
+        .select("created_at")
+        .eq("token_symbol", token_symbol.toLowerCase())
+        .gte("created_at", new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString());
+
+      let buckets;
+      if (tweets?.length) {
+        buckets = groupIntoBuckets(tweets);
+      } else {
+        console.warn("No tweets found in Supabase. Using live fallback.");
+        buckets = await fetchLiveBuckets(token_symbol);
+      }
 
       if (buckets) {
         const tokenData = {
           token: token_symbol,
           total: Object.values(buckets).reduce((a, b) => a + b, 0),
-          intervals: {
-            "1h": buckets["1h"] ?? 0,
-            "6h": buckets["6h"] ?? 0,
-            "12h": buckets["12h"] ?? 0,
-            "24h": buckets["24h"] ?? 0,
-            "48h": buckets["48h"] ?? 0,
-          },
-          history: [
-            buckets["1h"] ?? 0,
-            buckets["6h"] ?? 0,
-            buckets["12h"] ?? 0,
-            buckets["24h"] ?? 0,
-            buckets["48h"] ?? 0,
-          ],
+          intervals: buckets,
+          history: [buckets["1h"], buckets["6h"], buckets["12h"], buckets["24h"], buckets["48h"]],
         };
         setWatchlist((prev) => [...prev, tokenData]);
       } else {
         alert("No tweet data found for this token.");
       }
     } catch (err) {
-      console.error("Error fetching token tweet buckets:", err);
+      console.error("Error handling token selection:", err);
     }
 
     setModalOpen(false);
     setLoadingToken(false);
+    setSearchInput("");
+    setFilteredOptions(tokenOptions);
   };
 
-  const handleSearch = async () => {
-    if (!searchInput.trim()) return;
-    await handleSelectToken(searchInput.trim(), true);
-    setSearchInput("");
+  const handleSearchInput = (e) => {
+    const val = e.target.value;
+    setSearchInput(val);
+    const filtered = tokenOptions.filter((t) =>
+      t.token_symbol.toLowerCase().includes(val.toLowerCase())
+    );
+    setFilteredOptions(filtered);
   };
 
   const handleRemoveToken = (tokenSymbol) => {
@@ -100,7 +130,6 @@ const TwitterScan = () => {
   return (
     <div className="bg-[#010409] min-h-screen text-gray-300">
       <Header />
-
       <div className="max-w-6xl mx-auto px-6 py-10">
         <h1 className="text-3xl font-bold text-green-400 mb-2 text-center">
           TwitterScan
@@ -112,26 +141,7 @@ const TwitterScan = () => {
           Tweets shown here are filtered for relevance – spam and shill posts are removed.
         </p>
 
-        {/* Search bar */}
-        <div className="flex justify-center mb-8 gap-3">
-          <input
-            type="text"
-            placeholder="Search any token (e.g. $TOFI)"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-            className="px-4 py-2 bg-green-900/10 border border-green-700/40 text-green-300 rounded-md w-64 placeholder-green-500 focus:outline-none focus:ring focus:ring-green-500"
-          />
-          <button
-            onClick={handleSearch}
-            className="px-4 py-2 bg-green-700 text-white rounded-md hover:bg-green-600 transition"
-          >
-            Scan
-          </button>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {/* Add Token Card */}
           <div
             onClick={() => setModalOpen(true)}
             className="cursor-pointer p-5 rounded-xl bg-gradient-to-br from-green-900/20 to-green-800/10 border border-green-600/40 shadow-inner hover:shadow-green-400/10 hover:scale-105 transition-all duration-300 flex flex-col justify-center items-center text-green-300"
@@ -140,7 +150,6 @@ const TwitterScan = () => {
             <p className="text-sm font-medium">Add Token</p>
           </div>
 
-          {/* Watchlist Cards */}
           {watchlist.map(({ token, total, intervals, history }, index) => (
             <div
               key={index}
@@ -199,22 +208,27 @@ const TwitterScan = () => {
 
       <Footer />
 
-      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="bg-[#0A0F0A] p-6 rounded-lg border border-green-700/30 w-full max-w-md shadow-2xl">
             <h3 className="text-lg font-semibold text-green-300 mb-4 text-center">
-              Select a Token
+              Search Token
             </h3>
+            <input
+              type="text"
+              placeholder="Type token symbol..."
+              value={searchInput}
+              onChange={handleSearchInput}
+              className="w-full px-4 py-2 mb-4 rounded-md bg-green-900/10 border border-green-600/30 text-green-200 placeholder-green-500"
+            />
             <div className="max-h-72 overflow-y-auto space-y-2">
-              {tokenOptions.map((token, i) => (
+              {filteredOptions.map((token, i) => (
                 <button
                   key={i}
                   onClick={() => handleSelectToken(token.token_symbol)}
                   className="w-full text-left px-4 py-2 bg-green-900/10 hover:bg-green-700/20 rounded-md text-green-300 text-sm"
                 >
-                  {token.token_symbol}{" "}
-                  <span className="text-gray-400">({token.token_name})</span>
+                  {token.token_symbol} <span className="text-gray-400">({token.token_name})</span>
                 </button>
               ))}
             </div>

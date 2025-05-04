@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useMemo, useState } from "react";
 import ApexCharts from "react-apexcharts";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
@@ -46,7 +47,8 @@ function prepareData(tokens, tweets, filter) {
     .filter(Boolean);
 }
 
-const StackedAreaChart = ({ tokens = [], tweets = [] }) => {
+// eslint-disable-next-line react/prop-types
+const TokenSentimentChart = ({ tokens = [], tweets = [] }) => {
   const [filter, setFilter] = useState("24h");
   const data = useMemo(() => prepareData(tokens, tweets, filter), [tokens, tweets, filter]);
 
@@ -74,18 +76,6 @@ const StackedAreaChart = ({ tokens = [], tweets = [] }) => {
       height: 320,
       background: "transparent",
       toolbar: { show: false },
-      dropShadow: {
-        enabled: true,
-        top: 3,
-        left: 0,
-        blur: 10,
-        opacity: 0.15,
-      },
-      animations: {
-        enabled: true,
-        speed: 800,
-        easing: "easeOutQuad",
-      },
     },
     plotOptions: {
       boxPlot: {
@@ -93,136 +83,35 @@ const StackedAreaChart = ({ tokens = [], tweets = [] }) => {
           upper: "#a855f7",
           lower: "#8b5cf6",
         },
-        lineWidth: 2,
         medianStroke: "#fff",
-        boxShadow: {
-          enabled: true,
-          color: "rgba(107, 114, 128, 0.1)",
-          blur: 8,
-          offsetY: 2,
-          opacity: 1,
-        },
       },
     },
     colors: ["#e070fa", "#fde047"],
-    stroke: {
-      width: 1,
-      curve: "smooth",
-      colors: ["#f9fafb"],
-    },
-    grid: {
-      borderColor: "#374151",
-      yaxis: {
-        lines: {
-          show: true,
-          color: "#4a5568",
-        },
-      },
-      xaxis: {
-        lines: {
-          show: false,
-        },
-      },
-    },
     tooltip: {
       theme: "dark",
-      style: {
-        fontSize: "12px",
-        fontFamily:
-          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
-      },
-      y: {
-        formatter: (v) => v.toFixed(2),
-      },
-      x: {
-        title: {
-          formatter: (v) => `Token: ${v}`,
-        },
-      },
+      y: { formatter: (v) => v.toFixed(2) },
     },
     xaxis: {
       type: "category",
-      title: {
-        text: "TOKEN",
-        style: {
-          color: "#e0f2fe",
-          fontWeight: 500,
-          fontSize: "14px",
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
-          textTransform: "uppercase",
-        },
-      },
-      labels: {
-        style: {
-          colors: "#f5f5f5",
-          fontSize: "12px",
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
-        },
-        rotation: -45,
-        rotateAlways: true,
-        offsetY: 12,
-      },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
+      title: { text: "TOKEN", style: { color: "#e0f2fe" } },
+      labels: { style: { colors: "#f5f5f5" }, rotate: -45 },
     },
     yaxis: {
       min: 0,
       max: 2,
-      tickAmount: 4,
-      title: {
-        text: "SENTIMENT",
-        style: {
-          color: "#e0f2fe",
-          fontWeight: 500,
-          fontSize: "14px",
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
-          textTransform: "uppercase",
-        },
-      },
-      labels: {
-        style: {
-          colors: "#f5f5f5",
-          fontSize: "12px",
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
-        },
-      },
+      title: { text: "SENTIMENT", style: { color: "#e0f2fe" } },
+      labels: { style: { colors: "#f5f5f5" } },
     },
-    legend: {
-      show: false,
-    },
-    markers: {
-      size: 7,
-      colors: ["#fef08a"],
-      strokeColors: "transparent",
-      strokeWidth: 0,
-      hover: {
-        sizeOffset: 3,
-        fillColor: "#fff",
-        strokeColor: "#fef08a",
-        strokeWidth: 1.5,
-      },
-    },
-    states: {
-      hover: {
-        filter: {
-          type: "none",
-        },
-      },
-    },
+    grid: { borderColor: "#374151" },
+    legend: { show: false },
   };
-
-  const containerClassName = "pt-10 px-2 sm:px-6 w-full";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: "easeOut" }}
-      className={containerClassName}
+      transition={{ duration: 0.7 }}
+      className="pt-10 px-2 sm:px-6 w-full"
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold tracking-wide uppercase text-white">
@@ -255,11 +144,7 @@ const StackedAreaChart = ({ tokens = [], tweets = [] }) => {
         ))}
       </div>
 
-      <div className="w-full">
-        <div id="chart">
-          <ApexCharts options={options} series={series} type="boxPlot" height={320} />
-        </div>
-      </div>
+      <ApexCharts options={options} series={series} type="boxPlot" height={320} />
 
       <p className="mt-6 text-xs text-center text-gray-400">
         Sentiment distribution across top 20 tokens
@@ -269,4 +154,4 @@ const StackedAreaChart = ({ tokens = [], tweets = [] }) => {
   );
 };
 
-export default StackedAreaChart;
+export default TokenSentimentChart;

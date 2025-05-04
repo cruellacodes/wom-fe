@@ -1,9 +1,11 @@
 import { Bars3Icon, XMarkIcon, BoltIcon } from "@heroicons/react/24/solid";
+// eslint-disable-next-line no-unused-vars
 import React, { useState } from "react";
 import Logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
 
-const Header = ({ onScrollToLeaderboard, scrollToTweetSentimentAreaChart }) => {
+// eslint-disable-next-line no-empty-pattern
+const Header = ({  }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
