@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React from "react";
 import { FaTelegramPlane, FaGithub } from "react-icons/fa";
 import { SiX } from "react-icons/si";
@@ -67,7 +68,7 @@ const Footer = () => {
 
       {/* Centered Tagline */}
       <div className="mt-10 text-center text-xs text-white/60">
-        AI that reads degens so you don't have to.
+        AI that reads degens so you don&apos;t have to.
       </div>
 
       {/* Bottom row: copyright + scroll up */}

@@ -1,7 +1,7 @@
+/* eslint-disable react/prop-types */
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect, useRef } from "react";
 import {
-  ChevronUpIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/solid";
@@ -12,8 +12,8 @@ import { AiOutlineLineChart } from "react-icons/ai";
 const PAGE_SIZE = 20;
 
 const Leaderboard = ({
-  tokens,
-  tweets,
+  tokens = [],
+  tweets = [],
   onTokenClick,
   setScrollTweetSentimentAreaChart,
   page,
@@ -36,7 +36,6 @@ const Leaderboard = ({
     }
   }, [setScrollTweetSentimentAreaChart]);
 
-  // 🔁 Handle pagination overflow on real-time updates
   const sortedTokens = [...tokens].sort((a, b) => {
     const aVal = a[sortBy];
     const bVal = b[sortBy];
@@ -49,7 +48,7 @@ const Leaderboard = ({
       case "6h":
         return age <= 6;
       case "24h":
-        return age <= 24;
+        return age < 24;
       case "5d":
         return age <= 120;
       default:
@@ -98,24 +97,27 @@ const Leaderboard = ({
   };
 
   const renderSortArrow = (key) => {
-    if (sortBy !== key) return <span className="text-gray-500 ml-1">↕</span>;
+    const baseStyle = "ml-1 inline-block";
+    if (sortBy !== key) {
+      return <span className={`${baseStyle} text-gray-500`}>⇅</span>;
+    }
+  
     return sortOrder === -1 ? (
-      <ChevronDownIcon className="h-4 w-4 inline-block ml-1 text-green-400" />
+      <span className={`${baseStyle} text-green-400`}>↓</span>
     ) : (
-      <ChevronUpIcon className="h-4 w-4 inline-block ml-1 text-green-400" />
+      <span className={`${baseStyle} text-green-400`}>↑</span>
     );
-  };
-
+  };  
+  
   return (
     <div className="p-6 rounded-xl text-green-300 bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg bg-opacity-90 transition-all duration-300">
-      {/* Centered header */}
       <div className="flex justify-center mb-6">
-        <h2 className="text-xl md:text-2xl font-semibold tracking-wide text-white uppercase border-b border-gray-700 pb-1">
+        <h2 className="text-xl md:text-2xl font-semibold tracking-wide text-green-300 text-center">
           Leaderboard
         </h2>
+
       </div>
 
-      {/* Search + Filters */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
         <input
           type="text"
@@ -149,7 +151,6 @@ const Leaderboard = ({
         </div>
       </div>
 
-      {/* Token Table */}
       <div className="overflow-x-auto rounded-lg border border-green-800/40">
         <table className="w-full border-collapse text-left text-gray-300 text-sm">
           <thead>
@@ -237,7 +238,6 @@ const Leaderboard = ({
         </table>
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-center items-center gap-4 mt-6">
         <button
           onClick={() => onPageChange(currentPage - 1)}
@@ -258,7 +258,6 @@ const Leaderboard = ({
         </button>
       </div>
 
-      {/* Tweet Chart */}
       <div ref={TweetSentimentAreaChartRef} className="mt-10">
         <TweetSentimentAreaChart tokens={tokens} tweets={tweets} />
       </div>

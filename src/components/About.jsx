@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React from "react"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
@@ -21,7 +22,7 @@ const About = () => {
             </p>
             <p className="mb-4 font-semibold">
               WOM exists to answer one simple question: <br />
-              <span className="italic">"What is the market really saying about this token right now?"</span>
+              <span className="italic">&quot;What is the market really saying about this token right now?&quot;</span>
             </p>
           </div>
           <div className="bg-green-800/10 p-6 rounded-xl border border-green-900 shadow-lg">

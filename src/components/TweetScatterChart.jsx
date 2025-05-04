@@ -1,175 +1,229 @@
+/* eslint-disable react/prop-types */
+// eslint-disable-next-line no-unused-vars
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
+import Logo from "../assets/logo.jpg";
 
 const TweetScatterChart = ({ searchedToken, tweets }) => {
-
   const svgRef = useRef();
 
   useEffect(() => {
-    const width = 800,
-          height = 400,
-          margin = { top: 20, right: 20, bottom: 50, left: 60 };
+    const width = 800;
+    const height = 400;
+    const margin = { top: 20, right: 20, bottom: 50, left: 60 };
 
-    // Clear previous chart content and tooltips
     d3.select(svgRef.current).selectAll("*").remove();
     d3.select("body").selectAll(".tooltip").remove();
 
-    const svg = d3.select(svgRef.current)
+    const svg = d3
+      .select(svgRef.current)
       .attr("viewBox", `0 0 ${width} ${height}`)
       .attr("preserveAspectRatio", "xMidYMid meet")
       .style("width", "100%")
-      .style("height", "auto");
+      .style("height", "auto")
+      .style("background", "transparent"); // SVG transparent, outer div handles bg
 
-    // Define the current time and 24 hours ago (UTC)
+    const defs = svg.append("defs");
+
+    // Gradient stroke for axes
+    const axisGradient = defs
+      .append("linearGradient")
+      .attr("id", "gradient-axis")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "100%")
+      .attr("y2", "0%");
+    axisGradient
+      .append("stop")
+      .attr("offset", "0%")
+      .attr("stop-color", "#ff6fe7");
+    axisGradient
+      .append("stop")
+      .attr("offset", "100%")
+      .attr("stop-color", "#00f5ff");
+
+    // watermark logo
+    const logoSize = 180;
+    svg
+      .append("image")
+      .attr("xlink:href", Logo)
+      .attr("x", width / 2 - logoSize / 2)
+      .attr("y", height / 2 - logoSize / 2)
+      .attr("width", logoSize)
+      .attr("height", logoSize)
+      .attr("opacity", 0.04);
+
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // Filter tweets to include only those from the last 24 hours
     const recentTweets = tweets.filter(
-      tweet => new Date(tweet.created_at) >= twentyFourHoursAgo
+      (tweet) => new Date(tweet.created_at) >= twentyFourHoursAgo
     );
 
-    // Function to transform followers count
-    function transformFollowers(value) {
-      if (value <= 500) return value / 500;
-      if (value <= 1000) return 1 + (value - 500) / 500;
-      if (value <= 5000) return 2 + (value - 1000) / 4000;
-      if (value <= 10000) return 3 + (value - 5000) / 5000;
-      if (value <= 50000) return 4 + (value - 10000) / 40000;
-      return 5 + (value - 50000) / 50000;
-    }
+    const transformFollowers = (val) => {
+      if (val <= 500) return val / 500;
+      if (val <= 1000) return 1 + (val - 500) / 500;
+      if (val <= 5000) return 2 + (val - 1000) / 4000;
+      if (val <= 10000) return 3 + (val - 5000) / 5000;
+      if (val <= 50000) return 4 + (val - 10000) / 40000;
+      return 5 + (val - 50000) / 50000;
+    };
 
-    const data = recentTweets.map(tweet => ({
+    const data = recentTweets.map((tweet) => ({
       date: new Date(tweet.created_at),
       originalFollowers: tweet.followers_count,
-      transformedFollowers: transformFollowers(Math.min(tweet.followers_count, 100000)),
+      transformedFollowers: transformFollowers(
+        Math.min(tweet.followers_count, 100000)
+      ),
       text: tweet.text,
       username: tweet.user_name,
-      profilePic: tweet.profile_pic || "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+      profilePic:
+        tweet.profile_pic ||
+        "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
       tweetUrl: `https://x.com/${tweet.user_name}/status/${tweet.tweet_id}`,
     }));
 
-    // Set the xScale to always span the last 24 hours
-    const xScale = d3.scaleTime()
-                     .domain([twentyFourHoursAgo, now])
-                     .range([margin.left, width - margin.right]);
+    const xScale = d3
+      .scaleTime()
+      .domain([twentyFourHoursAgo, now])
+      .range([margin.left, width - margin.right]);
+    const yScale = d3
+      .scaleLinear()
+      .domain([0, 6])
+      .range([height - margin.bottom, margin.top]);
 
-    const yScale = d3.scaleLinear()
-                     .domain([0, 6])
-                     .range([height - margin.bottom, margin.top]);
+    const xAxis = d3.axisBottom(xScale).ticks(6).tickFormat(d3.utcFormat("%H:%M"));
+    const yAxis = d3
+      .axisLeft(yScale)
+      .tickValues([0, 1, 2, 3, 4, 5, 6])
+      .tickFormat((d) =>
+        ({
+          0: "0",
+          1: "500",
+          2: "1K",
+          3: "5K",
+          4: "10K",
+          5: "50K",
+          6: "100K+",
+        }[d])
+      );
 
-    // Use d3.utcFormat to display time in UTC (hours and minutes)
-    const xAxis = d3.axisBottom(xScale)
-                    .ticks(6)
-                    .tickFormat(d3.utcFormat("%H:%M"));
+    svg
+      .append("g")
+      .attr("transform", `translate(0, ${height - margin.bottom})`)
+      .call(xAxis)
+      .selectAll("text")
+      .style("fill", "#e0e0ff")
+      .style("font-size", "11px")
+      .style("font-family", "JetBrains Mono, Fira Code, monospace");
 
-    const yAxis = d3.axisLeft(yScale)
-                    .tickValues([0, 1, 2, 3, 4, 5, 6])
-                    .tickFormat(d => ({
-                      0: "0", 1: "500", 2: "1K", 3: "5K",
-                      4: "10K", 5: "50K", 6: "100K+"
-                    }[d]));
+    svg
+      .append("text")
+      .attr("x", width / 2)
+      .attr("y", height - margin.bottom + 40)
+      .attr("text-anchor", "middle")
+      .style("fill", "#b6b6c4")
+      .style("font-size", "12px")
+      .style("font-family", "JetBrains Mono, Fira Code, monospace")
+      .text("Time (UTC)");
 
-    // Append x-axis
-    svg.append("g")
-       .attr("transform", `translate(0, ${height - margin.bottom})`)
-       .call(xAxis)
-       .selectAll("text")
-       .style("fill", "#22C55E")
-       .style("font-size", "11px");
+    svg
+      .append("g")
+      .attr("transform", `translate(${margin.left}, 0)`)
+      .call(yAxis)
+      .selectAll("text")
+      .style("fill", "#e0e0ff")
+      .style("font-size", "11px")
+      .style("font-family", "JetBrains Mono, Fira Code, monospace");
 
-    // Append x-axis title
     svg.append("text")
-       .attr("x", width / 2)
-       .attr("y", height - margin.bottom + 40)
-       .attr("text-anchor", "middle")
-       .style("fill", "#22C55E")
-       .style("font-size", "12px")
-       .text("Time (UTC)");
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", margin.left - 45)
+      .attr("text-anchor", "middle")
+      .style("fill", "#b6b6c4")
+      .style("font-size", "12px")
+      .style("font-family", "JetBrains Mono, Fira Code, monospace")
+      .text("Followers");
 
-    // Append y-axis
-    svg.append("g")
-       .attr("transform", `translate(${margin.left}, 0)`)
-       .call(yAxis)
-       .selectAll("text")
-       .style("fill", "#22C55E")
-       .style("font-size", "11px");
+    // Gradient axes line stroke
+    svg.selectAll(".domain").attr("stroke", "url(#gradient-axis)");
+    svg.selectAll(".tick line").attr("stroke", "#333b50");
 
-    // Append grid lines for y-axis
-    svg.append("g")
-       .attr("class", "grid")
-       .attr("transform", `translate(${margin.left}, 0)`)
-       .call(d3.axisLeft(yScale)
-               .tickSize(-width + margin.left + margin.right)
-               .tickFormat(""))
-       .selectAll("line")
-       .attr("stroke", "rgba(34,197,94,0.4)")
-       .attr("stroke-dasharray", "3");
+    const yTicks = yScale.ticks(6);
+    const dotSpacing = 10;
+    yTicks.forEach((tick) => {
+      const y = yScale(tick);
+      for (let x = margin.left + 5; x < width - margin.right; x += dotSpacing) {
+        svg
+          .append("circle")
+          .attr("cx", x)
+          .attr("cy", y)
+          .attr("r", 0.7)
+          .attr("fill", "url(#gradient-axis)");
+      }
+    });
 
-    // Create tooltip element
-      const tooltip = d3.select("body")
-        .append("div")
-        .attr("class", "tooltip")
-        .style("position", "absolute")
-        .style("background", "#0A0F0A")
-        .style("border", "1px solid #22C55E")
-        .style("color", "#fff")
-        .style("padding", "8px 12px")
-        .style("border-radius", "8px")
-        .style("box-shadow", "0 3px 10px rgba(0, 0, 0, 0.6)")
-        .style("font-size", "12px")
-        .style("pointer-events", "none")
-        .style("opacity", 0)
-        .style("transition", "opacity 0.15s ease-in-out")
-        .style("max-width", "260px")
-        .style("word-wrap", "break-word")
-        .style("white-space", "normal");
+    const tooltip = d3
+      .select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "rgba(25, 25, 35, 0.9)")
+      .style("border", "1px solid #9992aa")
+      .style("backdrop-filter", "blur(6px)")
+      .style("color", "#fff")
+      .style("padding", "10px 14px")
+      .style("border-radius", "8px")
+      .style("font-family", "JetBrains Mono, Fira Code, monospace")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("opacity", 0)
+      .style("max-width", "260px");
 
-
-    // Create definitions for profile picture patterns
-    const defs = svg.append("defs");
     data.forEach((d, i) => {
-      defs.append("pattern")
-          .attr("id", `pattern-${i}`)
-          .attr("patternUnits", "objectBoundingBox")
-          .attr("width", 1)
-          .attr("height", 1)
-          .append("image")
-          .attr("href", d.profilePic)
-          .attr("width", 24)
-          .attr("height", 24)
-          .attr("preserveAspectRatio", "xMidYMid slice");
+      defs
+        .append("pattern")
+        .attr("id", `pattern-${i}`)
+        .attr("patternUnits", "objectBoundingBox")
+        .attr("width", 1)
+        .attr("height", 1)
+        .append("image")
+        .attr("href", d.profilePic)
+        .attr("width", 24)
+        .attr("height", 24)
+        .attr("preserveAspectRatio", "xMidYMid slice");
     });
 
     data.forEach((d, i) => {
-      const anchor = svg.append("a")
+      svg
+        .append("a")
         .attr("xlink:href", d.tweetUrl)
         .attr("target", "_blank")
         .attr("rel", "noopener noreferrer")
-        .attr("xmlns:xlink", "http://www.w3.org/1999/xlink"); // for older browsers
-    
-      anchor.append("circle")
-        .attr("class", "data-point")
+        .append("circle")
         .attr("cx", xScale(d.date))
         .attr("cy", height - margin.bottom)
         .attr("r", 0)
         .style("fill", `url(#pattern-${i})`)
-        .attr("stroke", "#22C55E")
-        .attr("stroke-width", 1.5)
+        .attr("stroke", "#8884d8")
+        .attr("stroke-width", 1)
         .on("mouseover", (event) => {
           tooltip.transition().duration(150).style("opacity", 1);
-          tooltip.html(
-            `<div style="font-weight: bold; color: #22C55E;">@${d.username}</div>
-             <hr style="border: none; border-top: 1px solid #22C55E; margin: 6px;">
-             <div style="color: #fff;">${d.text}</div>
-             <div style="font-style: italic; color: #bbb; margin-top: 4px;">Followers: ${d.originalFollowers.toLocaleString()}</div>`
-          )
-          .style("left", event.pageX + 12 + "px")
-          .style("top", event.pageY - 26 + "px");
+          tooltip
+            .html(
+              `<div style="font-weight: bold; color: #ff6fe7;">@${d.username}</div>
+             <hr style="border: none; border-top: 1px solid #555; margin: 6px;">
+             <div style="color: #eee;">${d.text}</div>
+             <div style="font-style: italic; color: #aaa; margin-top: 4px;">Followers: ${d.originalFollowers.toLocaleString()}</div>`
+            )
+            .style("left", event.pageX + 12 + "px")
+            .style("top", event.pageY - 26 + "px");
         })
         .on("mousemove", (event) => {
-          tooltip.style("left", event.pageX + 12 + "px")
-                 .style("top", event.pageY - 26 + "px");
+          tooltip
+            .style("left", event.pageX + 12 + "px")
+            .style("top", event.pageY - 26 + "px");
         })
         .on("mouseout", () => {
           tooltip.transition().duration(100).style("opacity", 0);
@@ -180,15 +234,20 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
         .ease(d3.easeCubicOut)
         .attr("cy", yScale(d.transformedFollowers))
         .attr("r", 12);
-    });    
-
-
+    });
   }, [tweets]);
 
   return (
-    <div className="relative p-5 rounded-lg bg-[#0A0F0A] border border-green-900/30 shadow-md">
-      <h2 className="text-lg font-semibold text-green-300 mb-3">
-        Recent Tweets for {searchedToken.token_symbol}
+    <div
+      className="relative p-5 rounded-lg shadow-md"
+      style={{
+        background:
+          "linear-gradient(160deg, #1a0033 0%, #0e1a2a 50%, #000000 100%)",
+        border: "1px solid #ffffff0a",
+      }}
+    >
+      <h2 className="text-lg font-semibold text-[#ff6fe7] mb-3 font-mono uppercase tracking-widest">
+        Recent Tweets for {searchedToken.token_symbol?.toUpperCase()}
       </h2>
       <svg ref={svgRef}></svg>
     </div>

@@ -1,16 +1,15 @@
+// eslint-disable-next-line no-unused-vars
 import React from "react";
 import ReactApexChart from "react-apexcharts";
 import { motion } from "framer-motion";
 
 const podiumColors = ["#8A2BE2", "#FFD700", "#00BFFF"];
 
-const PodiumPolarChart = ({ tokens }) => {
-
-  // Filter and prepare top 3 tokens safely
+// eslint-disable-next-line react/prop-types
+const Podium = ({ tokens = [] }) => {
   const topTokens = [...tokens]
-  .sort((a, b) => b.tweet_count - a.tweet_count)
-  .slice(0, 3);
-
+    .sort((a, b) => b.tweetVolume - a.tweetVolume)
+    .slice(0, 3);
 
   const chartOptions = {
     chart: {
@@ -20,7 +19,7 @@ const PodiumPolarChart = ({ tokens }) => {
       background: "transparent",
     },
     labels: topTokens.map((token) => token.token_symbol),
-    colors: podiumColors,
+    colors: podiumColors.slice(0, topTokens.length),
     stroke: {
       width: 1,
       colors: ["#fff"],
@@ -30,12 +29,8 @@ const PodiumPolarChart = ({ tokens }) => {
     },
     plotOptions: {
       polarArea: {
-        rings: {
-          strokeWidth: 1,
-        },
-        spokes: {
-          strokeWidth: 1,
-        },
+        rings: { strokeWidth: 1 },
+        spokes: { strokeWidth: 1 },
       },
     },
     legend: {
@@ -58,7 +53,7 @@ const PodiumPolarChart = ({ tokens }) => {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
       className="p-3 rounded-md bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg 
-      bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto w-full"
+        bg-opacity-90 shadow-md hover:shadow-lg transition-all duration-300 max-w-md mx-auto w-full"
     >
       <h2 className="text-sm font-semibold text-green-300 text-center mb-1">
         Talk of the Day
@@ -71,7 +66,7 @@ const PodiumPolarChart = ({ tokens }) => {
         <div className="w-[90%] mx-auto">
           <ReactApexChart
             options={chartOptions}
-            series={topTokens.map((token) => token.tweet_count)}
+            series={topTokens.map((token) => token.tweetVolume)}
             type="polarArea"
             height={230}
           />
@@ -83,4 +78,4 @@ const PodiumPolarChart = ({ tokens }) => {
   );
 };
 
-export default PodiumPolarChart;
+export default Podium;
