@@ -47,8 +47,8 @@ function ChartToggle({ show, onToggle }) {
 
 function App() {
   const [searchedToken, setSearchedToken] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [filteredTweets, setFilteredTweets] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showCharts, setShowCharts] = useState(true);
 
   const tokenInfoRef = useRef(null);
@@ -62,9 +62,10 @@ function App() {
     dayjs.utc(t.created_at).isAfter(nowUtc.subtract(24, "hour"))
   );
 
-  const topTweetTokens = getTopTokensByTweetCount(tokens, 3, tweets, 24); // last 24h
+  const topTweetTokens = getTopTokensByTweetCount(tokens, 3, tweets, 24);
   const topWomTokens = getTopTokensByWomScore(tokens, 5);
 
+  // Set default token and tweets on load
   useEffect(() => {
     if (!searchedToken && tokens.length > 0 && tweets.length > 0) {
       const tokenWithTweets = tokens.find((token) =>
@@ -84,6 +85,7 @@ function App() {
     }
   }, [searchedToken, tokens, tweets]);
 
+  // Maintain pagination bounds
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(tokens.length / 20));
     if (currentPage > totalPages) {
@@ -91,6 +93,7 @@ function App() {
     }
   }, [tokens.length, currentPage]);
 
+  // Used by leaderboard click
   const handleTokenClick = (token) => {
     const clickedSymbol = token.token_symbol?.trim().toLowerCase();
     const relevantTweets = tweets.filter(
@@ -157,8 +160,9 @@ function App() {
             <div ref={tokenInfoRef} className="max-w-3xl mx-auto px-4 mb-4">
               <TokenSearch
                 tokens={tokens}
-                setSearchedToken={handleTokenClick}
-                storedTweets={tweets}
+                tweets={tweets}
+                setSearchedToken={setSearchedToken}
+                setFilteredTweets={setFilteredTweets}
               />
             </div>
 
@@ -178,7 +182,10 @@ function App() {
               </div>
             )}
 
-            <div ref={leaderboardRef} className="max-w-7xl mx-auto px-6 mt-8 mb-8">
+            <div
+              ref={leaderboardRef}
+              className="max-w-7xl mx-auto px-6 mt-8 mb-8"
+            >
               <Leaderboard
                 tokens={tokens}
                 tweets={tweets}

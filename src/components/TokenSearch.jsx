@@ -16,14 +16,20 @@ const TokenSearch = ({
 
   useEffect(() => {
     const query = searchQuery.toLowerCase();
-    const filtered =
-      query.length > 0
-        ? tokens.filter((t) =>
-            [t.token_symbol, t.token_name, t.address]
-              .filter(Boolean)
-              .some((v) => v.toLowerCase().includes(query))
-          )
-        : [];
+    const filtered = query.length
+      ? tokens.filter((t) => {
+          const symbol = t.token_symbol?.toLowerCase() || "";
+          const name = t.token_name?.toLowerCase() || "";
+          const address = t.address?.toLowerCase() || "";
+
+          // prioritize symbol or name
+          return (
+            symbol.includes(query) ||
+            name.includes(query) ||
+            address === query // exact address match only
+          );
+        })
+      : [];
     setSuggestions(filtered.slice(0, 5));
     setSelectedIndex(0);
   }, [searchQuery, tokens]);
