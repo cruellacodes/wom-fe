@@ -11,16 +11,16 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-black text-white/90 px-6 pt-12 pb-6 border-t border-green-900/40 relative">
+    <footer className="bg-black text-white/90 px-6 pt-12 pb-6 relative">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
 
         {/* Left: Logo + Description */}
         <div className="flex flex-col gap-4">
           <img src={Logo} alt="WOM Logo" className="w-24 h-24 object-contain" />
           <p className="text-sm leading-relaxed text-white/80">
-            WOM (Word of Mouth) is a real-time sentiment signal for the crypto market.
-            It uses AI (via CryptoBERT) to scan Twitter, detect emerging hype, and quantify what the crowd is feeling.
-            By filtering out spam, shills, and noise, WOM helps you spot early traction and evolving token narratives.
+            WOM (Word of Mouth) is your signal in the noise – an AI-powered engine tuned to the pulse of the web.
+            It captures real-time narratives, filters out the fluff, and reveals what’s really moving the crowd.
+            Designed to spot momentum before it becomes mainstream.
           </p>
         </div>
 
@@ -72,7 +72,7 @@ const Footer = () => {
       </div>
 
       {/* Bottom row: copyright + scroll up */}
-      <div className="mt-4 pt-4 border-t border-green-800/40 flex justify-between items-center text-xs">
+      <div className="mt-4 pt-4 flex justify-between items-center text-xs">
         <p className="text-green-400">© {new Date().getFullYear()} WOM. All rights reserved.</p>
         <button
           onClick={scrollToTop}

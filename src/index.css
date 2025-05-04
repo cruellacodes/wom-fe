@@ -1,6 +1,76 @@
 @import "tailwindcss";
 
 .glow-text {
-    text-shadow: 0 0 5px #00ff99, 0 0 10px #00ff99, 0 0 20px #00ff99;
+  text-shadow: 0 0 5px #00ff99, 0 0 10px #00ff99, 0 0 20px #00ff99;
+}
+
+@keyframes typing {
+  0% {
+    width: 0;
   }
-  
+  75% {
+    width: 19ch;
+  }
+  90% {
+    width: 19ch;
+  }
+  100% {
+    width: 0;
+  }
+}
+
+@keyframes blink-caret {
+  0%, 100% {
+    border-color: #00FF00;
+  }
+  50% {
+    border-color: transparent;
+  }
+}
+
+.typewriter {
+  display: inline-block;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 18ch;
+  border-right: 2px solid #00FF00;
+  animation: typing 7s steps(18, end) infinite, blink-caret 1s step-end infinite;
+  color: #00FF00;
+}
+
+.typewriter-mobile {
+  display: inline-block;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 18ch;
+  border-right: 2px solid #00FF00;
+  animation: typing 7s steps(18, end) infinite, blink-caret 1s step-end infinite;
+  color: #00FF00;
+}
+
+
+@layer utilities {
+  .animate-pulse-fast {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-ping-slow {
+    animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .animate-glow {
+    animation: glow 1.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    0% {
+      text-shadow: 0 0 2px #00ff00, 0 0 4px #00ff00;
+    }
+    100% {
+      text-shadow: 0 0 4px #00ff00, 0 0 8px #00ff00;
+    }
+  }
+}
+

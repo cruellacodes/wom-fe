@@ -5,9 +5,9 @@ export default {
     extend: {
       colors: {
         'terminal-black': '#1E1E1E',
-        'terminal-green': '#00FF00',
         'terminal-dark': '#2D2D2D',
         'terminal-gray': '#3A3A3A',
+        'terminal-green': '#00FF00',
         'terminal-blue': '#569CD6',
         'terminal-white': '#FFFFFF',
       },
@@ -19,9 +19,18 @@ export default {
           '0%, 100%': { transform: 'scale(1)', opacity: 1 },
           '50%': { transform: 'scale(1.3)', opacity: 0.7 },
         },
+        blink: {
+          '50%': { opacity: '0' },
+        },
+        typewriter: {
+          '0%': { width: '0' },
+          '100%': { width: '100%' },
+        },
       },
       animation: {
         heartbeat: 'heartbeat 1.5s ease-in-out infinite',
+        blink: 'blink 1s step-start infinite',
+        typewriter: 'typewriter 2s steps(20, end) forwards',
       },
     },
   },
