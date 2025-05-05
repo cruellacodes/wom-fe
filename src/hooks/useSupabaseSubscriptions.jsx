@@ -2,33 +2,55 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import toast from "react-hot-toast";
 
+const PAGE_SIZE = 500;
+
 export function useSupabaseSubscriptions() {
   const [tokens, setTokens] = useState([]);
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1️⃣ Initial fetch – only tweets from last 24h (UTC)
+  // 1️. Initial fetch – tokens + progressive tweet paging
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const nowUTC = new Date().toISOString(); // current UTC time
-        const twentyFourHoursAgoUTC = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-        const [{ data: initialTokens }, { data: initialTweets }] = await Promise.all([
-          supabase.from("tokens").select("*").throwOnError(),
-          supabase
-            .from("tweets")
-            .select("*")
-            .gte("created_at", twentyFourHoursAgoUTC)
-            .lt("created_at", nowUTC)
-            .limit(1000)
-            .throwOnError(),
-        ]);
-
+        // Fetch tokens first
+        const { data: initialTokens } = await supabase
+          .from("tokens")
+          .select("*")
+          .throwOnError();
         setTokens(initialTokens || []);
-        setTweets(initialTweets || []);
+
+        let page = 0;
+        let finished = false;
+
+        // Fetch first page and render immediately
+        const { data: firstPage } = await supabase
+          .rpc("get_recent_tweets_for_active_tokens", {
+            limit_count: PAGE_SIZE,
+            offset_count: 0,
+          })
+          .throwOnError();
+        setTweets(firstPage || []);
+
+        // Load remaining pages in background
+        page = 1;
+        while (!finished) {
+          const { data: nextPage, error } = await supabase
+            .rpc("get_recent_tweets_for_active_tokens", {
+              limit_count: PAGE_SIZE,
+              offset_count: page * PAGE_SIZE,
+            })
+            .throwOnError();
+
+          if (error || !nextPage || nextPage.length === 0) {
+            finished = true;
+          } else {
+            setTweets((prev) => [...prev, ...nextPage]);
+            page++;
+          }
+        }
       } catch (err) {
-        console.error("❌ Supabase fetch error:", err);
+        console.error("Supabase fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -37,7 +59,7 @@ export function useSupabaseSubscriptions() {
     fetchInitialData();
   }, []);
 
-  // 2️⃣ Realtime token updates
+  // 2️. Realtime token updates + custom toast
   useEffect(() => {
     const channel = supabase
       .channel("realtime-tokens")
@@ -50,7 +72,14 @@ export function useSupabaseSubscriptions() {
             switch (eventType) {
               case "INSERT":
                 if (!updated.some((t) => t.token_symbol === newToken.token_symbol)) {
-                  toast.success(`New token added: $${newToken.token_symbol.toUpperCase()}`);
+                  toast.custom(() => (
+                    <div className="bg-[#0A0F0A] border border-green-400 text-green-300 px-4 py-3 rounded-lg shadow-md text-sm flex items-center space-x-2 animate-fadeIn">
+                      <span>🚀</span>
+                      <span>
+                        New token added: <strong>${newToken.token_symbol.toUpperCase()}</strong>
+                      </span>
+                    </div>
+                  ));
                   updated.push(newToken);
                 }
                 break;
@@ -74,7 +103,7 @@ export function useSupabaseSubscriptions() {
     };
   }, []);
 
-  // 3️⃣ Realtime tweet inserts – 24h UTC filter
+  // 3️. Realtime tweet inserts – 24h filter
   useEffect(() => {
     const channel = supabase
       .channel("realtime-tweets")

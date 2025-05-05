@@ -1,17 +1,19 @@
-// eslint-disable-next-line no-unused-vars
-import React from "react";
+/* eslint-disable react/prop-types */
+/* eslint-disable react/display-name */
+import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 import { motion } from "framer-motion";
 
 const podiumColors = ["#8A2BE2", "#FFD700", "#00BFFF"];
 
-// eslint-disable-next-line react/prop-types
-const Podium = ({ tokens = [] }) => {
-  const topTokens = [...tokens]
-    .sort((a, b) => b.tweetVolume - a.tweetVolume)
-    .slice(0, 3);
+const Podium = React.memo(({ tokens = [] }) => {
+  const topTokens = useMemo(() => {
+    return [...tokens]
+      .sort((a, b) => b.tweetVolume - a.tweetVolume)
+      .slice(0, 3);
+  }, [tokens]);
 
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({
     chart: {
       type: "polarArea",
       animations: { enabled: true },
@@ -45,7 +47,7 @@ const Podium = ({ tokens = [] }) => {
       fillSeriesColor: false,
       style: { fontSize: "12px" },
     },
-  };
+  }), [topTokens]);
 
   return (
     <motion.div
@@ -76,6 +78,6 @@ const Podium = ({ tokens = [] }) => {
       )}
     </motion.div>
   );
-};
+});
 
 export default Podium;
