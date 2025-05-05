@@ -1,5 +1,5 @@
-// eslint-disable-next-line no-unused-vars
-import React from "react";
+/* eslint-disable react-hooks/rules-of-hooks */
+import React, { useMemo } from "react";
 import solanaIcon from "../assets/solana.png";
 import { AiOutlineLineChart } from "react-icons/ai";
 import { HiOutlineInformationCircle } from "react-icons/hi";
@@ -11,12 +11,36 @@ const getScoreColor = (score = 0) => {
   return "bg-red-500 shadow-red-500/40";
 };
 
-const TokenInfoCard = ({ token }) => {
+const TokenInfoCard = React.memo(function TokenInfoCard({ token }) {
   if (!token) return null;
+
+  const scoreColor = useMemo(() => getScoreColor(Number(token.wom_score)), [token.wom_score]);
+
+  const marketData = useMemo(
+    () => [
+      {
+        label: "Market Cap",
+        value: token.market_cap_usd != null ? `$${token.market_cap_usd.toLocaleString()}` : "—",
+      },
+      {
+        label: "24h Volume",
+        value: token.volume_usd != null ? `$${token.volume_usd.toLocaleString()}` : "—",
+      },
+      {
+        label: "Liquidity",
+        value: token.liquidity_usd != null ? `$${token.liquidity_usd.toLocaleString()}` : "—",
+      },
+      {
+        label: "1h Change",
+        value: `${(token.pricechange1h ?? 0).toFixed(2)}%`,
+        className: token.pricechange1h >= 0 ? "text-green-400" : "text-red-400",
+      },
+    ],
+    [token]
+  );
 
   return (
     <div className="relative p-5 rounded-2xl bg-[#0A0F0A] border border-gray-800/60 shadow-xl transition-all duration-300 hover:border-green-500/30">
-      {/* Dex Screener Chart Icon */}
       <div className="absolute top-4 right-4">
         <a
           href={token.dex_url}
@@ -28,7 +52,6 @@ const TokenInfoCard = ({ token }) => {
         </a>
       </div>
 
-      {/* Header */}
       <div className="flex items-center gap-4 mb-4">
         <img
           src={solanaIcon}
@@ -62,9 +85,9 @@ const TokenInfoCard = ({ token }) => {
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-green-400 via-green-200 to-green-400 animate-pulse" />
           ) : (
             <div
-              className={`absolute top-0 left-0 h-full ${getScoreColor(token.wom_score ?? 0)}`}
+              className={`absolute top-0 left-0 h-full ${scoreColor}`}
               style={{ width: `${token.wom_score ?? 0}%` }}
-            ></div>
+            />
           )}
         </div>
         <p className="text-xs mt-1 text-gray-300">
@@ -74,36 +97,20 @@ const TokenInfoCard = ({ token }) => {
 
       {/* Market Data */}
       <div className="grid grid-cols-2 gap-4 text-sm">
-        {[
-          {
-            label: "Market Cap",
-            value: token.market_cap_usd != null ? `$${token.market_cap_usd.toLocaleString()}` : "—",
-          },
-          {
-            label: "24h Volume",
-            value: token.volume_usd != null ? `$${token.volume_usd.toLocaleString()}` : "—",
-          },
-          {
-            label: "Liquidity",
-            value: token.liquidity_usd != null ? `$${token.liquidity_usd.toLocaleString()}` : "—",
-          },
-          {
-            label: "1h Change",
-            value: `${(token.pricechange1h ?? 0).toFixed(2)}%`,
-            className: token.pricechange1h >= 0 ? "text-green-400" : "text-red-400",
-          },
-        ].map((item, i) => (
+        {marketData.map((item, i) => (
           <div key={i} className="flex flex-col bg-[#111] p-3 rounded-xl">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">{item.label}</span>
-            <span className={`font-semibold ${item.className || "text-gray-200"}`}>{item.value}</span>
+            <span className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">
+              {item.label}
+            </span>
+            <span className={`font-semibold ${item.className || "text-gray-200"}`}>
+              {item.value}
+            </span>
           </div>
         ))}
       </div>
     </div>
   );
-};
-
-export default TokenInfoCard;
+});
 
 TokenInfoCard.propTypes = {
   token: PropTypes.shape({
@@ -118,3 +125,5 @@ TokenInfoCard.propTypes = {
     pricechange1h: PropTypes.number,
   }),
 };
+
+export default TokenInfoCard;

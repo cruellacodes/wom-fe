@@ -1,18 +1,20 @@
 @import "tailwindcss";
 
+/* ==== Glow Text Utility ==== */
 .glow-text {
   text-shadow: 0 0 5px #00ff99, 0 0 10px #00ff99, 0 0 20px #00ff99;
 }
 
+/* ==== Typewriter + Blink Caret Animation ==== */
 @keyframes typing {
   0% {
     width: 0;
   }
-  75% {
-    width: 19ch;
+  50% {
+    width: 26ch;
   }
-  90% {
-    width: 19ch;
+  60% {
+    width: 26ch;
   }
   100% {
     width: 0;
@@ -21,7 +23,7 @@
 
 @keyframes blink-caret {
   0%, 100% {
-    border-color: #00FF00;
+    border-color: #00ff00;
   }
   50% {
     border-color: transparent;
@@ -33,37 +35,29 @@
   font-family: monospace;
   white-space: nowrap;
   overflow: hidden;
-  width: 18ch;
-  border-right: 2px solid #00FF00;
-  animation: typing 7s steps(18, end) infinite, blink-caret 1s step-end infinite;
-  color: #00FF00;
+  width: 26ch; /* "Word Of Mouth AI" + extra breathing room */
+  border-right: 2px solid #00ff00;
+  color: #00ff00;
+  animation: typing 4s steps(26, end) infinite, blink-caret 0.7s step-end infinite;
 }
 
-.typewriter-mobile {
-  display: inline-block;
-  font-family: monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  width: 18ch;
-  border-right: 2px solid #00FF00;
-  animation: typing 7s steps(18, end) infinite, blink-caret 1s step-end infinite;
-  color: #00FF00;
+/* ==== Heartbeat Animation ==== */
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 1.2s ease-in-out infinite;
 }
 
 
+/* ==== Optional Utility Layer (if needed in Tailwind) ==== */
 @layer utilities {
-  .animate-pulse-fast {
-    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  .animate-ping-slow {
-    animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
-  }
-
-  .animate-glow {
-    animation: glow 1.8s ease-in-out infinite alternate;
-  }
-
   @keyframes glow {
     0% {
       text-shadow: 0 0 2px #00ff00, 0 0 4px #00ff00;
@@ -72,5 +66,38 @@
       text-shadow: 0 0 4px #00ff00, 0 0 8px #00ff00;
     }
   }
-}
 
+  .animate-glow {
+    animation: glow 1.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes ping-slow {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    75%, 100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  .animate-ping-slow {
+    animation: ping-slow 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes pulse-fast {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.7;
+    }
+  }
+
+  .animate-pulse-fast {
+    animation: pulse-fast 1.5s ease-in-out infinite;
+  }
+}

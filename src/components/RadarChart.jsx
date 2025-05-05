@@ -1,6 +1,6 @@
+/* eslint-disable react/display-name */
 /* eslint-disable react/prop-types */
-// eslint-disable-next-line no-unused-vars
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -12,16 +12,13 @@ dayjs.extend(isBetween);
 
 const colorPalette = ["#8A2BE2", "#FFD700", "#00BFFF", "#7FFF00", "#FF69B4"];
 
-const RadarChart = ({ tokens = [], tweets = [] }) => {
-  const [seriesData, setSeriesData] = useState([]);
-  const categories = ["Hour -6", "Hour -5", "Hour -4", "Hour -3", "Hour -2", "Hour -1"];
+const RadarChart = React.memo(({ tokens = [], tweets = [] }) => {
+  const now = useMemo(() => dayjs.utc().startOf("hour"), []);
 
-  useEffect(() => {
-    if (!tokens.length || !tweets.length) return;
+  const seriesData = useMemo(() => {
+    if (!tokens.length || !tweets.length) return [];
 
-    const now = dayjs.utc().startOf("hour");
     const buckets = [];
-
     for (let i = 6; i > 0; i--) {
       buckets.push({
         start: now.subtract(i, "hour"),
@@ -29,7 +26,7 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
       });
     }
 
-    const tokenVolumes = tokens.map((token, idx) => {
+    return tokens.map((token, idx) => {
       const symbol = token.token_symbol?.toLowerCase();
       const counts = Array(6).fill(0);
 
@@ -37,7 +34,6 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
         if (tweet.token_symbol?.toLowerCase() !== symbol) return;
 
         const createdAt = dayjs.utc(tweet.created_at);
-
         buckets.forEach((bucket, i) => {
           if (createdAt.isBetween(bucket.start, bucket.end, null, "[)")) {
             counts[i]++;
@@ -52,12 +48,10 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
         data: counts,
         color: colorPalette[idx % colorPalette.length],
       };
-    });
+    }).filter(Boolean);
+  }, [tokens, tweets, now]);
 
-    setSeriesData(tokenVolumes.filter(Boolean));
-  }, [tokens, tweets]);
-
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({
     chart: {
       type: "radar",
       background: "transparent",
@@ -76,7 +70,7 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
       },
     },
     xaxis: {
-      categories,
+      categories: ["Hour -6", "Hour -5", "Hour -4", "Hour -3", "Hour -2", "Hour -1"],
       labels: { style: { fontSize: "11px", colors: "#FFFFFF" } },
     },
     yaxis: {
@@ -90,29 +84,23 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
     markers: { size: 4 },
     legend: {
       position: "bottom",
-      horizontalAlign: "center", 
+      horizontalAlign: "center",
       offsetY: 30,
       fontSize: "13px",
-      itemMargin: {
-        horizontal: 10,
-        vertical: 35,
-      },
+      itemMargin: { horizontal: 10, vertical: 35 },
       labels: {
         colors: "#22C55E",
         useSeriesColors: true,
       },
     },
-    
     colors: seriesData.map((s) => s.color),
     tooltip: {
       theme: "dark",
       style: { fontSize: "11px" },
       fillSeriesColor: false,
-      markers: {
-        size: 2,
-      },
+      markers: { size: 2 },
     },
-  };
+  }), [seriesData]);
 
   return (
     <motion.div
@@ -143,6 +131,6 @@ const RadarChart = ({ tokens = [], tweets = [] }) => {
       )}
     </motion.div>
   );
-};
+});
 
 export default RadarChart;

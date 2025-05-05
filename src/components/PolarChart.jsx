@@ -1,54 +1,65 @@
-// eslint-disable-next-line no-unused-vars
-import React from "react";
+/* eslint-disable react/prop-types */
+import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 import { motion } from "framer-motion";
 
-// eslint-disable-next-line react/prop-types
-const PolarChart = ({ tokens = [] }) => {
-  const filteredTokens = tokens
-    .filter((token) => token.token_symbol && typeof token.wom_score === "number")
-    .sort((a, b) => b.wom_score - a.wom_score)
-    .slice(0, 5);
+const PolarChart = React.memo(function PolarChart({ tokens = [] }) {
+  const filteredTokens = useMemo(() => {
+    return tokens
+      .filter((token) => token.token_symbol && typeof token.wom_score === "number")
+      .sort((a, b) => b.wom_score - a.wom_score)
+      .slice(0, 5);
+  }, [tokens]);
 
-  const tokenLabels = filteredTokens.map((token) => token.token_symbol);
-  const tokenSeries = filteredTokens.map((token) => token.wom_score);
+  const tokenLabels = useMemo(
+    () => filteredTokens.map((token) => token.token_symbol),
+    [filteredTokens]
+  );
 
-  const chartOptions = {
-    chart: {
-      type: "polarArea",
-      background: "transparent",
-      toolbar: { show: false },
-      animations: { enabled: true },
-    },
-    labels: tokenLabels,
-    fill: {
-      opacity: 0.75,
-      colors: Array(tokenLabels.length).fill("#22C55E"),
-    },
-    stroke: {
-      colors: ["#000"],
-    },
-    yaxis: {
-      labels: { style: { colors: "#A3A3A3", fontSize: "10px" } },
-    },
-    legend: {
-      position: "bottom",
-      labels: {
-        colors: "#22C55E",
-        useSeriesColors: false,
+  const tokenSeries = useMemo(
+    () => filteredTokens.map((token) => token.wom_score),
+    [filteredTokens]
+  );
+
+  const chartOptions = useMemo(
+    () => ({
+      chart: {
+        type: "polarArea",
+        background: "transparent",
+        toolbar: { show: false },
+        animations: { enabled: true },
       },
-    },
-    plotOptions: {
-      polarArea: {
-        rings: { strokeWidth: 1 },
-        spokes: { strokeWidth: 1 },
+      labels: tokenLabels,
+      fill: {
+        opacity: 0.75,
+        colors: Array(tokenLabels.length).fill("#22C55E"),
       },
-    },
-    tooltip: {
-      theme: "dark",
-      style: { fontSize: "11px" },
-    },
-  };
+      stroke: {
+        colors: ["#000"],
+      },
+      yaxis: {
+        labels: { style: { colors: "#A3A3A3", fontSize: "10px" } },
+      },
+      legend: {
+        position: "bottom",
+        labels: {
+          colors: "#22C55E",
+          useSeriesColors: false,
+        },
+      },
+      plotOptions: {
+        polarArea: {
+          rings: { strokeWidth: 1 },
+          spokes: { strokeWidth: 1 },
+        },
+      },
+      tooltip: {
+        theme: "dark",
+        style: { fontSize: "11px" },
+      },
+    }),
+    [tokenLabels]
+  );
 
   return (
     <motion.div
@@ -79,6 +90,6 @@ const PolarChart = ({ tokens = [] }) => {
       )}
     </motion.div>
   );
-};
+});
 
 export default PolarChart;

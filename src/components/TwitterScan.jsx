@@ -128,23 +128,21 @@ const TwitterScan = () => {
   };
 
   return (
-    <div className="bg-[#010409] min-h-screen text-gray-300">
+    <div className="bg-[#010409] min-h-screen text-[#C8FECB]">
       <Header />
       <div className="max-w-6xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold text-green-400 mb-2 text-center">
-          TwitterScan
-        </h1>
-        <p className="text-center text-sm text-gray-400 mb-2">
+        <h1 className="text-3xl font-bold text-[#00FF00] mb-2 text-center">TwitterScan</h1>
+        <p className="text-center text-sm text-[#7FFF7F] mb-2">
           Track Tweet Volume Over Time for Any Token
         </p>
-        <p className="text-center text-xs text-green-500 italic mb-6">
+        <p className="text-center text-xs text-[#39FF14] italic mb-6">
           Tweets shown here are filtered for relevance – spam and shill posts are removed.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div
             onClick={() => setModalOpen(true)}
-            className="cursor-pointer p-5 rounded-xl bg-gradient-to-br from-green-900/20 to-green-800/10 border border-green-600/40 shadow-inner hover:shadow-green-400/10 hover:scale-105 transition-all duration-300 flex flex-col justify-center items-center text-green-300"
+            className="cursor-pointer p-5 rounded-xl bg-gradient-to-br from-[#112B11] to-[#0B1F0B] border border-[#00FF00]/20 shadow-inner hover:shadow-[#00FF00]/10 hover:scale-105 transition-all duration-300 flex flex-col justify-center items-center text-[#8AFF8A]"
           >
             <PlusIcon className="w-10 h-10 mb-2" />
             <p className="text-sm font-medium">Add Token</p>
@@ -153,19 +151,19 @@ const TwitterScan = () => {
           {watchlist.map(({ token, total, intervals, history }, index) => (
             <div
               key={index}
-              className="relative p-5 rounded-xl bg-gradient-to-br from-[#0A0F0A] to-[#031715] border border-green-700/30 shadow-xl hover:shadow-green-400/10 transition"
+              className="relative p-5 rounded-xl bg-gradient-to-br from-[#0D1A0D] to-[#071707] border border-[#00FF00]/20 shadow-xl hover:shadow-[#00FF00]/10 transition"
             >
               <button
                 onClick={() => handleRemoveToken(token)}
-                className="absolute top-2 right-2 text-green-400 hover:text-red-400 transition"
+                className="absolute top-2 right-2 text-[#8AFF8A] hover:text-red-400 transition"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-green-300">{token}</h2>
-                <span className="text-sm text-gray-400">{total.toLocaleString()} tweets</span>
+                <h2 className="text-xl font-semibold text-[#C8FECB]">{token}</h2>
+                <span className="text-sm text-[#A0FFA0]">{total.toLocaleString()} tweets</span>
               </div>
-              <ul className="text-xs text-green-400 space-y-1 mb-4">
+              <ul className="text-xs text-[#90FF90] space-y-1 mb-4">
                 {Object.entries(intervals).map(([label, value]) => (
                   <li key={label} className="flex justify-between">
                     <span>{label}</span>
@@ -180,8 +178,8 @@ const TwitterScan = () => {
                     {
                       label: "Tweet Volume",
                       data: history,
-                      backgroundColor: "#22C55E99",
-                      borderRadius: 6,
+                      backgroundColor: "rgba(0, 255, 0, 0.5)",
+                      borderRadius: 8,
                     },
                   ],
                 }}
@@ -190,12 +188,12 @@ const TwitterScan = () => {
                   responsive: true,
                   scales: {
                     x: {
-                      ticks: { color: "#9AE6B4" },
-                      grid: { color: "#1F2937" },
+                      ticks: { color: "#C8FECB" },
+                      grid: { color: "#133113" },
                     },
                     y: {
-                      ticks: { color: "#9AE6B4" },
-                      grid: { color: "#1F2937" },
+                      ticks: { color: "#C8FECB" },
+                      grid: { color: "#133113" },
                     },
                   },
                 }}
@@ -210,8 +208,8 @@ const TwitterScan = () => {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-[#0A0F0A] p-6 rounded-lg border border-green-700/30 w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-semibold text-green-300 mb-4 text-center">
+          <div className="bg-[#071707] p-6 rounded-lg border border-[#00FF00]/20 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#C8FECB] mb-4 text-center">
               Search Token
             </h3>
             <input
@@ -219,22 +217,22 @@ const TwitterScan = () => {
               placeholder="Type token symbol..."
               value={searchInput}
               onChange={handleSearchInput}
-              className="w-full px-4 py-2 mb-4 rounded-md bg-green-900/10 border border-green-600/30 text-green-200 placeholder-green-500"
+              className="w-full px-4 py-2 mb-4 rounded-md bg-[#102610] border border-[#00FF00]/20 text-[#C8FECB] placeholder-[#80FF80]"
             />
             <div className="max-h-72 overflow-y-auto space-y-2">
               {filteredOptions.map((token, i) => (
                 <button
                   key={i}
                   onClick={() => handleSelectToken(token.token_symbol)}
-                  className="w-full text-left px-4 py-2 bg-green-900/10 hover:bg-green-700/20 rounded-md text-green-300 text-sm"
+                  className="w-full text-left px-4 py-2 bg-[#102610] hover:bg-[#1B3B1B]/30 rounded-md text-[#C8FECB] text-sm"
                 >
-                  {token.token_symbol} <span className="text-gray-400">({token.token_name})</span>
+                  {token.token_symbol} <span className="text-[#A0FFA0]">({token.token_name})</span>
                 </button>
               ))}
             </div>
             <button
               onClick={() => setModalOpen(false)}
-              className="mt-6 block w-full text-sm text-center text-green-400 hover:text-green-200"
+              className="mt-6 block w-full text-sm text-center text-[#90FF90] hover:text-[#D2FFD2]"
             >
               Cancel
             </button>

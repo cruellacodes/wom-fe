@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Routes, Route } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
 import React from "react";
@@ -19,6 +19,7 @@ import Podium from "./components/Podium";
 import PolarChart from "./components/PolarChart";
 import About from "./components/About";
 import TwitterScan from "./components/TwitterScan";
+import AppLoader from "./components/Loader";
 
 import { useSupabaseSubscriptions } from "./hooks/useSupabaseSubscriptions";
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
@@ -57,13 +58,20 @@ function App() {
 
   const { tokens, tweets, loading } = useSupabaseSubscriptions();
 
-  const nowUtc = dayjs.utc();
-  const tweetsLast24h = tweets.filter((t) =>
-    dayjs.utc(t.created_at).isAfter(nowUtc.subtract(24, "hour"))
-  );
+  const nowUtc = useMemo(() => dayjs.utc(), []);
+  const tweetsLast24h = useMemo(() => {
+    return tweets.filter((t) =>
+      dayjs.utc(t.created_at).isAfter(nowUtc.subtract(24, "hour"))
+    );
+  }, [tweets, nowUtc]);
 
-  const topTweetTokens = getTopTokensByTweetCount(tokens, 3, tweets, 24);
-  const topWomTokens = getTopTokensByWomScore(tokens, 5);
+  const topTweetTokens = useMemo(() => {
+    return getTopTokensByTweetCount(tokens, 3, tweets, 24);
+  }, [tokens, tweets]);
+
+  const topWomTokens = useMemo(() => {
+    return getTopTokensByWomScore(tokens, 5);
+  }, [tokens]);
 
   // Set default token and tweets on load
   useEffect(() => {
@@ -85,7 +93,6 @@ function App() {
     }
   }, [searchedToken, tokens, tweets]);
 
-  // Maintain pagination bounds
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(tokens.length / 20));
     if (currentPage > totalPages) {
@@ -93,25 +100,26 @@ function App() {
     }
   }, [tokens.length, currentPage]);
 
-  // Used by leaderboard click
-  const handleTokenClick = (token) => {
-    const clickedSymbol = token.token_symbol?.trim().toLowerCase();
-    const relevantTweets = tweets.filter(
-      (t) => t.token_symbol?.trim().toLowerCase() === clickedSymbol
-    );
-    setSearchedToken(token);
-    setFilteredTweets(relevantTweets);
-  };
+  const handleTokenClick = useCallback(
+    (token) => {
+      const clickedSymbol = token.token_symbol?.trim().toLowerCase();
+      const relevantTweets = tweets.filter(
+        (t) => t.token_symbol?.trim().toLowerCase() === clickedSymbol
+      );
+      setSearchedToken(token);
+      setFilteredTweets(relevantTweets);
+    },
+    [tweets]
+  );
 
   const handlePageChange = (page) => setCurrentPage(page);
 
+
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#010409] flex items-center justify-center text-green-400 text-lg">
-        Loading dashboard...
-      </div>
-    );
+    return <AppLoader />;
   }
+
+  
 
   return (
     <Routes>
