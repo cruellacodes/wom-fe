@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 // eslint-disable-next-line no-unused-vars
 import React from "react"
 import Header from "../components/Header"
@@ -5,108 +6,53 @@ import Footer from "../components/Footer"
 
 const About = () => {
   return (
-    <div className="bg-[#010409] min-h-screen text-gray-300">
+    <div className="bg-black min-h-screen text-gray-200 font-sans">
       <Header />
 
-      <main className="max-w-6xl mx-auto px-6 py-16">
-        <section className="grid md:grid-cols-2 gap-12 mb-16">
-          <div>
-            <h1 className="text-4xl font-bold mb-6 text-green-300">Why WOM?</h1>
-            <p className="mb-4">
-              You wake up, and yet again, the token everyone was raving about 6 hours ago has already pumped. Whether you’re in
-              NYC, Berlin, or Bali, it always feels like you’re in the wrong time zone.
+      <main className="max-w-6xl mx-auto px-6 py-20">
+        <section className="grid md:grid-cols-2 gap-16 mb-24">
+          <div className="space-y-6">
+            <h1 className="text-3xl md:text-4xl font-semibold text-white">Why WOM?</h1>
+            <p className="text-sm md:text-base leading-relaxed text-gray-400">
+              Crypto moves fast — but sentiment signals are scattered, noisy, and easy to miss. Social feeds are overwhelmed with bots, shills, and recycled hype. By the time you notice, the opportunity’s already gone.
             </p>
-            <p className="mb-4">
-              The alpha chats are a mess. Everyone’s aping betas. You try to keep up by hopping into Twitter
-               but it’s just spam, bots, and engagement farming. You hesitate, skip the play, and it rips.
-            </p>
-            <p className="mb-4 font-semibold">
-              WOM exists to answer one simple question: <br />
-              <span className="italic">&quot;What is the market really saying about this token right now?&quot;</span>
+            <p className="text-sm md:text-base leading-relaxed text-gray-400">
+              WOM is an AI-powered layer for surfacing real-time market sentiment. Using a custom-trained language model and live tweet data, WOM extracts high-signal insights from crypto Twitter and gives each token a sentiment score you can act on.
             </p>
           </div>
-          <div className="bg-green-800/10 p-6 rounded-xl border border-green-900 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4 text-green-200">What WOM Measures</h2>
-            <ul className="list-disc list-inside space-y-2">
-              <li>We pull freshly created tokens</li>
-              <li>We fetch tweets in parallel using a round-robin job queue</li>
-              <li>We remove spam and bot shills</li>
-              <li>We analyze tone using AI language models trained on crypto talk</li>
-              <li>We aggregate sentiment into a single <strong>WOM Score</strong></li>
+
+          <div className="bg-[#111] p-6 md:p-8 rounded-2xl border border-[#222]">
+            <h2 className="text-xl font-medium text-green-300 mb-4">What WOM Measures</h2>
+            <ul className="list-disc list-inside space-y-3 text-sm text-gray-300">
+              <li>Detects and indexes newly created Solana tokens</li>
+              <li>Fetches tweets asynchronously on a rotating schedule</li>
+              <li>Filters out low-quality content and spam</li>
+              <li>Applies a custom AI model trained on crypto-native language</li>
+              <li>Generates a unified <strong>WOM Score</strong> per token</li>
             </ul>
           </div>
         </section>
 
         <section className="mb-24">
-            <h2 className="text-3xl font-bold text-slate-100 mb-12 text-center">How to Read the Dashboard</h2>
+          <h2 className="text-2xl font-semibold text-white mb-12 text-center">Reading the Dashboard</h2>
 
-            {/* Trio Chart Highlights */}
-            <div className="grid md:grid-cols-3 gap-6 mb-16">
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">RadarChart</h3>
-                <p className="text-sm text-slate-400">
-                    Top 3 tokens by tweet volume in the last 6 hours. Great for spotting sudden attention spikes.
-                </p>
-                </div>
+          <div className="grid md:grid-cols-3 gap-6 mb-16">
+            <DashboardCard title="Radar" desc="Top 3 tokens by tweet volume in the past 6 hours — see what’s getting sudden traction." />
+            <DashboardCard title="Podium" desc="Most tweeted tokens of the day — pure volume, no sentiment." />
+            <DashboardCard title="Sentiment Radar" desc="Top 5 tokens by average sentiment. High WOM Score = loved by the crowd." />
+          </div>
 
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">Podium</h3>
-                <p className="text-sm text-slate-400">
-                    The 3 most tweeted tokens of the day. Pure volume, no sentiment. Think: trending tokens.
-                </p>
-                </div>
-
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">PolarChart</h3>
-                <p className="text-sm text-slate-400">
-                    Visualizes the top 5 tokens ranked by sentiment (WOM Score). These aren’t just popular - they’re beloved.
-                </p>
-                </div>
-            </div>
-
-            {/* Tools & Components */}
-            <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800 md:col-span-2">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">SearchBar</h3>
-                <p className="text-sm text-slate-400">
-                    Want sentiment analysis for a token not listed? Just drop the token address and we’ll analyze the latest tweets instantly.
-                </p>
-                </div>
-
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">TweetScatterChart</h3>
-                <p className="text-sm text-slate-400">
-                    A breakdown of individual tweets. See how sentiment is distributed per token. Super helpful for spotting mixed reactions.
-                </p>
-                </div>
-
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">TokenInfoCard</h3>
-                <p className="text-sm text-slate-400">
-                    Your instant snapshot: WOM Score, volume, liquidity, price delta, Dex link — all in one neat card.
-                </p>
-                </div>
-
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">Leaderboard</h3>
-                <p className="text-sm text-slate-400">
-                    Interactive table of all tokens. Sort by WOM Score, tweet count, market cap, and more. Click any row to explore.
-                </p>
-                </div>
-
-                <div className="bg-[#111318] p-5 rounded-xl shadow border border-neutral-800">
-                <h3 className="text-lg font-semibold text-slate-200 mb-2">BubbleChart</h3>
-                <p className="text-sm text-slate-400">
-                    Each bubble = a tweet. X: time, Y: sentiment score, size: follower count. Use it to watch how hype builds (or dies).
-                </p>
-                </div>
-            </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <DashboardCard title="Search" desc="Search any token address and we’ll instantly analyze its latest tweet sentiment." full />
+            <DashboardCard title="Tweet Scatter" desc="Every tweet, plotted by time and sentiment score. Get the full mood." />
+            <DashboardCard title="Token Card" desc="Snapshot of WOM Score, liquidity, volume, and price delta." />
+            <DashboardCard title="Leaderboard" desc="Sortable table of all tokens by WOM Score, tweet count, and more." />
+            <DashboardCard title="Sentiment Chart" desc="Sentiment over time stacked by tweet WOM score. Spot mood shifts early." link="https://github.com/cruellacodes/wom-fe/blob/main/src/docs/BoxPlotDoc.md" />
+          </div>
         </section>
 
-
-
         <div className="text-center mt-16">
-          <a href="/" className="text-green-400 text-lg">
+          <a href="/" className="text-green-400 text-sm hover:underline">
             ← Back to dashboard
           </a>
         </div>
@@ -117,4 +63,23 @@ const About = () => {
   )
 }
 
-export default About
+const DashboardCard = ({ title, desc, full, link }) => (
+  <div className={`bg-[#111] p-5 md:p-6 rounded-xl border border-neutral-800 ${full ? 'md:col-span-2' : ''}`}>
+    <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
+    <p className="text-sm text-gray-400">{desc}</p>
+    {link && (
+      <p className="mt-2 text-xs">
+        <a
+          href={link}
+          className="text-green-300 hover:text-green-100 underline"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Read more →
+        </a>
+      </p>
+    )}
+  </div>
+);
+
+export default About;
