@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
+import { useLocation } from "react-router-dom";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -57,6 +58,7 @@ function App() {
   const tweetSentimentRef = useRef(null);
 
   const { tokens, tweets, loading } = useSupabaseSubscriptions();
+  const location = useLocation();
 
   const nowUtc = useMemo(() => dayjs.utc(), []);
   const tweetsLast24h = useMemo(() => {
@@ -73,25 +75,45 @@ function App() {
     return getTopTokensByWomScore(tokens, 5);
   }, [tokens]);
 
-  // Set default token and tweets on load
+  // Set default token based on best WOM score with available tweets
   useEffect(() => {
     if (!searchedToken && tokens.length > 0 && tweets.length > 0) {
-      const tokenWithTweets = tokens.find((token) =>
+      const topWomSorted = getTopTokensByWomScore(tokens, 5); // already memoized above
+      const topTokenWithTweets = topWomSorted.find((token) =>
         tweets.some(
           (t) =>
             t.token_symbol?.toLowerCase() === token.token_symbol?.toLowerCase()
         )
       );
-      if (tokenWithTweets) {
-        const tokenSymbol = tokenWithTweets.token_symbol.toLowerCase();
-        const relevant = tweets.filter(
+
+      if (topTokenWithTweets) {
+        const tokenSymbol = topTokenWithTweets.token_symbol.toLowerCase();
+        const relevantTweets = tweets.filter(
           (t) => t.token_symbol?.toLowerCase() === tokenSymbol
         );
-        setSearchedToken(tokenWithTweets);
-        setFilteredTweets(relevant);
+        setSearchedToken(topTokenWithTweets);
+        setFilteredTweets(relevantTweets);
       }
     }
-  }, [searchedToken, tokens, tweets]);
+  }, [searchedToken, tokens, tweets, topWomTokens]);
+
+
+  useEffect(() => {
+    if (location?.state?.scrollTo === "leaderboard") {
+      setTimeout(() => {
+        leaderboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100); // small delay to ensure DOM is rendered
+    }
+  
+    if (location?.state?.scrollTo === "sentiment") {
+      setTimeout(() => {
+        tweetSentimentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [location]);
+  
+
+
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(tokens.length / 20));
@@ -108,6 +130,8 @@ function App() {
       );
       setSearchedToken(token);
       setFilteredTweets(relevantTweets);
+
+      tokenInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     },
     [tweets]
   );

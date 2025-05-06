@@ -18,7 +18,7 @@ const Footer = () => {
         <div className="flex flex-col gap-4">
           <img src={Logo} alt="WOM Logo" className="w-24 h-24 object-contain" />
           <p className="text-sm leading-relaxed text-white/80">
-            WOM (Word of Mouth) is your signal in the noise – an AI-powered engine tuned to the pulse of the web.
+            WOM (Word of Mouth AI) is your signal in the noise, an AI powered engine tuned to the pulse of the web.
             It captures real-time narratives, filters out the fluff, and reveals what’s really moving the crowd.
             Designed to spot momentum before it becomes mainstream.
           </p>

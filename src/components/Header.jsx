@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Bars3Icon,
   XMarkIcon,
-  TrophyIcon,
   ChartBarIcon,
   BookOpenIcon,
 } from "@heroicons/react/24/outline";
@@ -20,14 +19,9 @@ const Header = () => {
 
   const navItems = [
     {
-      icon: <TrophyIcon className="w-5 h-5" />,
+      icon: <ChartBarIcon className="w-5 h-5" />,
       label: "Leaderboard",
       action: () => navigate("/", { state: { scrollTo: "leaderboard" } }),
-    },
-    {
-      icon: <ChartBarIcon className="w-5 h-5" />,
-      label: "Sentiment",
-      action: () => navigate("/", { state: { scrollTo: "sentiment" } }),
     },
     {
       icon: <BookOpenIcon className="w-5 h-5" />,
