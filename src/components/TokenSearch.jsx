@@ -3,15 +3,26 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Search } from "lucide-react";
-import debounce from "lodash.debounce";
 
 const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTweets }) => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [waitingForAddress, setWaitingForAddress] = useState(false);
+  const [lastSymbolAttempt, setLastSymbolAttempt] = useState("");
 
   const lowerQuery = query.toLowerCase();
+
+  const isProbablyAddress = (input) => input.length >= 30;
+  
+  const resetUI = () => {
+    setQuery("");
+    setSuggestions([]);
+    setLoading(false);
+    setWaitingForAddress(false);
+    setLastSymbolAttempt("");
+  };  
 
   const matchedSuggestions = useMemo(() => {
     if (!lowerQuery) return [];
@@ -21,13 +32,22 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
         token_name.toLowerCase().includes(lowerQuery) ||
         address.toLowerCase() === lowerQuery
       )
-      .slice(0, 5);
+      .slice(0, 20); // increase for debugging
   }, [tokens, lowerQuery]);
+  
 
   useEffect(() => {
     setSuggestions(matchedSuggestions);
     setSelectedIndex(0);
   }, [matchedSuggestions]);
+
+  useEffect(() => {
+    if (query.trim() === "") {
+      setWaitingForAddress(false);
+      setLastSymbolAttempt("");
+    }
+  }, [query]);
+  
 
   const fetchTokenFromBackend = async (input) => {
     const chainId = "solana";
@@ -56,41 +76,55 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
     };
   };
 
-  const handleSearch = useCallback(
-    async (input = query) => {
-      if (!input) return;
-      setLoading(true);
-
-      let match = tokens.find(
-        (t) => t.token_symbol?.toLowerCase() === lowerQuery ||
-               t.token_name?.toLowerCase() === lowerQuery ||
-               t.address?.toLowerCase() === lowerQuery
+  const handleSearch = async (input = query) => {
+    if (!input) return;
+    setLoading(true);
+  
+    const lowerInput = input.toLowerCase();
+  
+    // STEP 1: check local token list
+    let match = tokens.find(
+      (t) =>
+        t.token_symbol?.toLowerCase() === lowerInput ||
+        t.token_name?.toLowerCase() === lowerInput ||
+        t.address?.toLowerCase() === lowerInput
+    );
+  
+    if (match) {
+      setFilteredTweets(
+        tweets.filter(
+          (t) => t.token_symbol?.toLowerCase() === match.token_symbol?.toLowerCase()
+        )
       );
-
-      if (match) {
-        setFilteredTweets(tweets.filter((t) => t.token_symbol === match.token_symbol?.toLowerCase()));
-      } else {
-        try {
-          const { match: fetchedToken, enrichedTweets } = await fetchTokenFromBackend(input);
-          match = fetchedToken;
-          setFilteredTweets(enrichedTweets);
-        } catch (err) {
-          console.error("Search API error:", err);
-          alert("Token not found.");
-          setLoading(false);
-          return;
-        }
-      }
-
       setSearchedToken(match);
-      setQuery("");
-      setSuggestions([]);
-      setLoading(false);
-    },
-    [query, tokens, tweets, lowerQuery, setSearchedToken, setFilteredTweets]
-  );
-
-  const debouncedInput = useCallback(debounce((val) => setQuery(val), 150), []);
+      resetUI();
+      return;
+    }
+  
+    // STEP 2: check if input is probably a valid address
+    if (isProbablyAddress(lowerInput)) {
+      try {
+        console.log("Direct fetch from backend using address:", lowerInput);
+        const { match: fetchedToken, enrichedTweets } = await fetchTokenFromBackend(lowerInput);
+        setFilteredTweets(enrichedTweets);
+        setSearchedToken(fetchedToken);
+        resetUI();
+        return;
+      } catch (err) {
+        console.error("Backend fetch failed:", err);
+        setLoading(false);
+        setSuggestions([]);
+        setWaitingForAddress(false);
+        setLastSymbolAttempt("");
+        return;
+      }
+    }
+  
+    // STEP 3: fallback — probably a bad symbol, prompt for address
+    setLastSymbolAttempt(input);
+    setWaitingForAddress(true);
+    setLoading(false);
+  };  
 
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
@@ -100,16 +134,26 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
       e.preventDefault();
       setSelectedIndex((prev) => Math.max(prev - 1, 0));
     } else if (e.key === "Enter") {
-      handleSearch(suggestions[selectedIndex]?.token_symbol || query);
+      handleSearch(query.trim());
     }
   };
 
   const handleClear = () => {
     setQuery("");
+    setSuggestions([]);
+    setWaitingForAddress(false);
+    setLastSymbolAttempt("");
+    setLoading(false);
+  
     const fallback = tokens[0];
     setSearchedToken(fallback);
-    setFilteredTweets(tweets.filter((t) => t.token_symbol === fallback.token_symbol?.toLowerCase()));
+    setFilteredTweets(
+      tweets.filter(
+        (t) => t.token_symbol?.toLowerCase() === fallback.token_symbol?.toLowerCase()
+      )
+    );
   };
+  
 
   return (
     <div className="relative w-full z-50 font-mono group">
@@ -117,14 +161,18 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
         <input
           type="text"
           placeholder="> search $token or address"
-          defaultValue={query}
-          onChange={(e) => debouncedInput(e.target.value)}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          
           onKeyDown={handleKeyDown}
           className="terminal-placeholder w-full pl-12 pr-10 py-3 rounded-xl bg-black/30 border border-[#14f195]/30 focus:ring-2 focus:ring-[#14f195] backdrop-blur-md text-[#14f195] placeholder-[#14f195]/70 outline-none font-mono text-sm transition-all duration-200"
         />
         <Search size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#14f195] group-hover:animate-pulse" />
         {query && (
-          <button onClick={handleClear} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#9945FF] hover:text-red-500 transition text-lg font-bold">
+          <button
+            onClick={handleClear}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#9945FF] hover:text-red-500 transition text-lg font-bold"
+          >
             ×
           </button>
         )}
@@ -140,13 +188,19 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
                 selectedIndex === idx ? "bg-[#14f195]/20" : ""
               }`}
             >
-              {token.token_symbol} <span className="text-xs text-[#9945FF]">({token.token_name})</span>
+              {token.token_symbol}{" "}
+              <span className="text-xs text-[#9945FF]">({token.token_name})</span>
             </li>
           ))}
         </ul>
       )}
 
       {loading && <p className="text-xs text-[#14f195] mt-2 animate-pulse font-mono">fetching tweets...</p>}
+      {waitingForAddress && (
+        <p className="text-xs text-[#FBBF24] mt-2 font-mono">
+          Couldn&apos;t find <span className="font-bold">${lastSymbolAttempt}</span>. Please paste its token address.
+        </p>
+      )}
     </div>
   );
 };
