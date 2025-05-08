@@ -9,21 +9,22 @@ export function useSupabaseSubscriptions() {
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1️. Initial fetch – tokens + progressive tweet paging
+  // 1️. Initial fetch – only active tokens + paginated tweets
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch tokens first
+        // Fetch only active tokens
         const { data: initialTokens } = await supabase
           .from("tokens")
           .select("*")
+          .eq("is_active", true)
           .throwOnError();
         setTokens(initialTokens || []);
 
+        // Fetch tweets paginated
         let page = 0;
         let finished = false;
 
-        // Fetch first page and render immediately
         const { data: firstPage } = await supabase
           .rpc("get_recent_tweets_for_active_tokens", {
             limit_count: PAGE_SIZE,
@@ -32,17 +33,16 @@ export function useSupabaseSubscriptions() {
           .throwOnError();
         setTweets(firstPage || []);
 
-        // Load remaining pages in background
         page = 1;
         while (!finished) {
-          const { data: nextPage, error } = await supabase
+          const { data: nextPage } = await supabase
             .rpc("get_recent_tweets_for_active_tokens", {
               limit_count: PAGE_SIZE,
               offset_count: page * PAGE_SIZE,
             })
             .throwOnError();
 
-          if (error || !nextPage || nextPage.length === 0) {
+          if (!nextPage || nextPage.length === 0) {
             finished = true;
           } else {
             setTweets((prev) => [...prev, ...nextPage]);
@@ -59,7 +59,7 @@ export function useSupabaseSubscriptions() {
     fetchInitialData();
   }, []);
 
-  // 2️. Realtime token updates + custom toast
+  // 2️. Realtime token updates
   useEffect(() => {
     const channel = supabase
       .channel("realtime-tokens")
@@ -69,9 +69,10 @@ export function useSupabaseSubscriptions() {
         ({ eventType, new: newToken, old: oldToken }) => {
           setTokens((prev) => {
             let updated = [...prev];
+
             switch (eventType) {
               case "INSERT":
-                if (!updated.some((t) => t.token_symbol === newToken.token_symbol)) {
+                if (newToken.is_active && !updated.some(t => t.token_symbol === newToken.token_symbol)) {
                   toast.custom(() => (
                     <div className="bg-[#0A0F0A] border border-green-400 text-green-300 px-4 py-3 rounded-lg shadow-md text-sm flex items-center space-x-2 animate-fadeIn">
                       <span>🚀</span>
@@ -83,15 +84,22 @@ export function useSupabaseSubscriptions() {
                   updated.push(newToken);
                 }
                 break;
+
               case "UPDATE":
-                updated = updated.map((t) =>
-                  t.token_symbol === newToken.token_symbol ? newToken : t
-                );
+                if (!newToken.is_active) {
+                  updated = updated.filter(t => t.token_symbol !== newToken.token_symbol);
+                } else {
+                  updated = updated.map(t =>
+                    t.token_symbol === newToken.token_symbol ? newToken : t
+                  );
+                }
                 break;
+
               case "DELETE":
-                updated = updated.filter((t) => t.token_symbol !== oldToken.token_symbol);
+                updated = updated.filter(t => t.token_symbol !== oldToken.token_symbol);
                 break;
             }
+
             return updated;
           });
         }
@@ -130,5 +138,9 @@ export function useSupabaseSubscriptions() {
     };
   }, []);
 
-  return { tokens, tweets, loading };
+  return {
+    tokens: tokens.filter((t) => t.is_active), // defensive filter
+    tweets,
+    loading,
+  };
 }
