@@ -22,7 +22,9 @@ import About from "./components/About";
 import TwitterScan from "./components/TwitterScan";
 import AppLoader from "./components/Loader";
 
-import { useSupabaseSubscriptions } from "./hooks/useSupabaseSubscriptions";
+import { useActiveTokens } from "./hooks/useActiveTokens";
+import { useTokenTweets } from "./hooks/useTokenTweets";
+
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
 
 dayjs.extend(utc);
@@ -57,7 +59,8 @@ function App() {
   const leaderboardRef = useRef(null);
   const tweetSentimentRef = useRef(null);
 
-  const { tokens, tweets, loading } = useSupabaseSubscriptions();
+  const { tokens, loading: loadingTokens } = useActiveTokens();
+  const { tweets, loading: loadingTweets } = useTokenTweets();
   const location = useLocation();
 
   const nowUtc = useMemo(() => dayjs.utc(), []);
@@ -138,12 +141,9 @@ function App() {
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-
-  if (loading) {
+  if (loadingTokens || loadingTweets) {
     return <AppLoader />;
   }
-
-  
 
   return (
     <Routes>
@@ -222,7 +222,7 @@ function App() {
                 tokens={tokens}
                 tweets={tweets}
                 onTokenClick={handleTokenClick}
-                loading={loading}
+                loading={loadingTokens || loadingTweets}
                 page={currentPage}
                 onPageChange={handlePageChange}
                 setScrollToTweetSentimentAreaChart={tweetSentimentRef}

@@ -35,9 +35,9 @@ The closer the median and Q3 are to 1.0, the more overwhelmingly positive the ma
 
 Token     | Min | Q1  | Median | Q3  | Max
 --------- | --- | --- | ------ | --- | ---
-$MOONCOIN | 0.2 | 0.45| 0.6    | 0.75| 0.95
-$FUDCOIN  | 0.1 | 0.25| 0.4    | 0.6 | 0.9
-$SLEEPY   | 0.3 | 0.4 | 0.5    | 0.55| 0.65
+$MOONCOIN | 4.61| 38.21| 44.65 | 49.75| 58.43
+$FUDCOIN  | 0.42| 38.25| 40.4  | 47.64| 62.25
+$SLEEPY   | 6.3 | 11.4 | 27.53 | 28.55| 31.14
 
 Interpretation:
 - $MOONCOIN shows strong bullishness with wide positive spread. Momentum potential.
@@ -68,7 +68,7 @@ In the Tweet Sentiment Chart, you might notice yellow dots appearing above or be
 
 ### Quick Takeaway
 - Yellow Dots = Extreme Sentiment Events
-- More (especially bullish) outliers often hint at emotional/viral posts that can precede major price movements—either up or down.
+- More (especially bullish) outliers often hint at emotional/viral posts that can precede major price movements either up or down.
 
 Use these insights alongside the rest of the chart to spot hidden momentum before the market reacts.
 
@@ -78,7 +78,7 @@ Use these insights alongside the rest of the chart to spot hidden momentum befor
    If sentiment improves but price lags behind, it’s a potential breakout loading.
 
 2. **The Sentiment Compression Play**\
-   When the boxplot becomes abnormally tight (small spread between Q1 and Q3), expect a violent move soon — bullish or bearish.
+   When the boxplot becomes abnormally tight (small spread between Q1 and Q3), expect a violent move soon bullish or bearish.
 
 3. **The Early Pivot Play**\
    If sentiment bottoms out (low minimums) and Q1 starts moving higher while price stagnates, you’re likely spotting the bottom early.
@@ -95,4 +95,4 @@ Stay sharp, stay ahead.
 ## Pro Tip
 Combine sentiment insights with liquidity tracking and supply data for even deadlier accuracy.
 
-> Emotions move markets — we just measure them.
+> Emotions move markets - we just measure them.
