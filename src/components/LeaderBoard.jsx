@@ -24,6 +24,7 @@ const Leaderboard = React.memo(
     const [sortOrder, setSortOrder] = useState(-1);
     const [searchQuery, setSearchQuery] = useState("");
     const [ageFilter, setAgeFilter] = useState("5d");
+    const [categoryFilter, setCategoryFilter] = useState("Trending"); // NEW
     const TokenSentimentChartRef = useRef(null);
 
     useEffect(() => {
@@ -60,6 +61,12 @@ const Leaderboard = React.memo(
         return sortOrder * (aVal - bVal);
       });
 
+      // Category filter
+      if (categoryFilter === "Believe") {
+        sorted = sorted.filter((t) => t.is_believe === true);
+      }
+
+      // Age filter
       sorted = sorted.filter((token) => {
         const age = token.age_hours ?? Infinity;
         switch (ageFilter) {
@@ -70,10 +77,11 @@ const Leaderboard = React.memo(
         }
       });
 
+      // Search
       return sorted.filter((token) =>
         token.token_symbol?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-    }, [tokens, sortBy, sortOrder, searchQuery, ageFilter]);
+    }, [tokens, sortBy, sortOrder, searchQuery, ageFilter, categoryFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredTokens.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
@@ -112,6 +120,24 @@ const Leaderboard = React.memo(
             placeholder="Search token..."
             className="px-3 py-2 bg-[#111] border border-gray-700 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600 w-full md:w-64 text-sm"
           />
+          <div className="flex gap-2">
+            {["Trending", "Believe"].map((val) => (
+              <button
+                key={val}
+                onClick={() => {
+                  setCategoryFilter(val);
+                  onPageChange(1);
+                }}
+                className={`px-3 py-1 border rounded-md text-sm transition-all ${
+                  categoryFilter === val
+                    ? "border-gray-500 text-white bg-[#1b1b1b]"
+                    : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+                }`}
+              >
+                {val}
+              </button>
+            ))}
+          </div>
           <div className="flex gap-2">
             {["6h", "24h", "5d"].map((val) => (
               <button
@@ -183,6 +209,11 @@ const Leaderboard = React.memo(
                           >
                             <AiOutlineLineChart className="w-4 h-4 text-gray-400" />
                           </a>
+                        )}
+                        {token.is_believe && (
+                          <span className="ml-2 text-xs text-green-400 bg-green-900 px-2 py-0.5 rounded-full">
+                            Believe
+                          </span>
                         )}
                       </span>
                     </td>
