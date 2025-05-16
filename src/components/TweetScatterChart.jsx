@@ -35,15 +35,15 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
   }, [recentTweets]);
 
   useEffect(() => {
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+    d3.select("body").selectAll(".tooltip").remove();
+
     if (!chartData.length) return;
 
     const width = 800;
     const height = 400;
     const margin = { top: 20, right: 20, bottom: 50, left: 60 };
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-    d3.select("body").selectAll(".tooltip").remove();
 
     svg
       .attr("viewBox", `0 0 ${width} ${height}`)
@@ -53,7 +53,6 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
 
     const defs = svg.append("defs");
 
-    // Gradient
     const gradient = defs.append("linearGradient")
       .attr("id", "gradient-axis")
       .attr("x1", "0%").attr("y1", "0%")
@@ -61,7 +60,6 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
     gradient.append("stop").attr("offset", "0%").attr("stop-color", "#ff6fe7");
     gradient.append("stop").attr("offset", "100%").attr("stop-color", "#00f5ff");
 
-    // Logo
     svg.append("image")
       .attr("xlink:href", Logo)
       .attr("x", width / 2 - 90)
@@ -73,6 +71,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
     const x = d3.scaleTime()
       .domain([Date.now() - 24 * 60 * 60 * 1000, Date.now()])
       .range([margin.left, width - margin.right]);
+
     const y = d3.scaleLinear().domain([0, 6]).range([height - margin.bottom, margin.top]);
 
     svg.append("g")
@@ -88,7 +87,6 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
         ))
       .selectAll("text").style("fill", "#e0e0ff").style("font-size", "11px");
 
-    // Grid dots
     y.ticks(6).forEach(tick => {
       for (let i = margin.left + 5; i < width - margin.right; i += 10) {
         svg.append("circle").attr("cx", i).attr("cy", y(tick)).attr("r", 0.6).attr("fill", "url(#gradient-axis)");
@@ -106,9 +104,11 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       .style("font-size", "12px")
       .style("pointer-events", "none")
       .style("opacity", 0)
-      .style("max-width", "260px");
+      .style("max-width", "240px") 
+      .style("word-break", "break-word") 
+      .style("white-space", "normal"); 
 
-    // Patterns
+
     chartData.forEach((d, i) => {
       defs.append("pattern")
         .attr("id", `pattern-${i}`)
@@ -163,6 +163,31 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
         Recent Tweets for {searchedToken?.token_symbol?.toUpperCase()}
       </h2>
       <svg ref={svgRef}></svg>
+
+      {chartData.length === 0 && (
+        <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 text-center text-[#00ffcc] font-mono text-sm fade-in">
+          <p className="mb-1"> No tweets found in the last 24h</p>
+          <p className="opacity-60"> Try another token or check back later</p>
+        </div>
+      )}
+
+      <style>{`
+        .fade-in {
+          animation: fadeInTerminal 1.2s ease-out forwards;
+          opacity: 0;
+        }
+
+        @keyframes fadeInTerminal {
+          0% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

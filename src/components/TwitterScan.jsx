@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-// TwitterScan.jsx
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
@@ -12,7 +10,7 @@ import {
   BarElement,
   Tooltip,
 } from "chart.js";
-import { XMarkIcon, PlusIcon } from "@heroicons/react/24/solid";
+import { XMarkIcon, MagnifyingGlassIcon, ArrowUpRightIcon } from "@heroicons/react/24/solid";
 import { supabase } from "../lib/supabaseClient";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
@@ -24,15 +22,13 @@ const TwitterScan = () => {
   const [tokenOptions, setTokenOptions] = useState([]);
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [searchInput, setSearchInput] = useState("");
-  const [, setTopToken] = useState(null);
-  const [, setLoadingToken] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(WATCHLIST_KEY);
     if (stored) {
       try {
         setWatchlist(JSON.parse(stored));
-      } catch (e) {
+      } catch {
         console.error("Invalid watchlist in localStorage");
       }
     }
@@ -48,14 +44,16 @@ const TwitterScan = () => {
         .from("tokens")
         .select("token_symbol, token_name")
         .eq("is_active", true);
-      if (error) console.error("Error fetching tokens:", error);
-      else {
+      if (!error && data) {
         setTokenOptions(data);
         setFilteredOptions(data);
       }
     };
     fetchTokens();
+  }, []);
 
+  useEffect(() => {
+    let mounted = true;
     const fetchTopToken = async () => {
       const { data, error } = await supabase
         .from("tokens")
@@ -64,12 +62,17 @@ const TwitterScan = () => {
         .order("tweet_count", { ascending: false })
         .limit(1)
         .single();
-      if (!error && data && !watchlist.some((t) => t.token === data.token_symbol)) {
-        handleSelectToken(data.token_symbol);
-        setTopToken(data.token_symbol);
+      if (!error && data) {
+        const topToken = data.token_symbol.toUpperCase();
+        if (mounted && !watchlist.find((t) => t.token === topToken)) {
+          await handleSelectToken(topToken);
+        }
       }
     };
     fetchTopToken();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const groupIntoBuckets = (tweets) => {
@@ -97,7 +100,7 @@ const TwitterScan = () => {
   const handleSelectToken = async (token_symbol) => {
     const symbol = token_symbol.toUpperCase();
     if (watchlist.some((t) => t.token === symbol)) return;
-    setLoadingToken(true);
+
     try {
       const { data: tweets } = await supabase
         .from("tweets")
@@ -125,9 +128,9 @@ const TwitterScan = () => {
     } catch (err) {
       console.error("Token selection failed:", err);
     }
+
     setSearchInput("");
     setFilteredOptions(tokenOptions);
-    setLoadingToken(false);
   };
 
   const handleSearchInput = (e) => {
@@ -140,117 +143,129 @@ const TwitterScan = () => {
     );
   };
 
-  const handleRemoveToken = (tokenSymbol) => {
-    setWatchlist((prev) => prev.filter((t) => t.token !== tokenSymbol));
+  const handleRemoveToken = (symbol) => {
+    setWatchlist((prev) => prev.filter((t) => t.token !== symbol));
+  };
+
+  const handleShare = (token, total) => {
+    const tweetText = encodeURIComponent(
+      `📈 $${token} got ${total.toLocaleString()} tweets in the last 48h!\n\nTrack token trends live at 👇`
+    );
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent("https://yourdashboardurl.com/twitter-scan")}`;
+    window.open(tweetUrl, "_blank");
   };
 
   return (
-    <div className="bg-[#0A0A0E] min-h-screen text-white font-sans">
+    <div className="bg-[#0A0A0E] min-h-screen text-white font-mono">
       <Header />
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="text-center mb-10">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#E5E5E5] tracking-tight mb-2">
-            Discover What’s Poppin’ on Solana 🚀
-          </h1>
-          <p className="text-sm sm:text-base text-[#A0A0A0] max-w-md mx-auto">
-            Real-time token trends based on tweet volume. No bots. No hype. Just signal.
-          </p>
 
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <div className="relative w-full sm:w-80">
-              <input
-                type="text"
-                placeholder="Search token..."
-                value={searchInput}
-                onChange={handleSearchInput}
-                className="w-full px-4 py-2 rounded-lg bg-[#0F1117] border border-[#00F5A0]/40 
-                text-white placeholder-[#777] focus:outline-none focus:ring-2 focus:ring-[#00F5A0] 
-                shadow-[0_0_8px_#00F5A040] transition"
-              />
-              {searchInput && (
-                <div className="absolute left-0 right-0 z-20 mt-1 bg-[#0F1117] border border-[#00F5A0]/30 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {filteredOptions.map((token, i) => (
-                    <div
-                      key={i}
-                      onClick={() => handleSelectToken(token.token_symbol)}
-                      className="px-4 py-2 cursor-pointer hover:bg-[#1F2230] text-sm text-white flex justify-between transition-all duration-150"
-                    >
-                      <span>{token.token_symbol}</span>
-                      <span className="text-[#00F5A0]">({token.token_name})</span>
-                    </div>
-                  ))}
+      <div className="px-6 max-w-5xl mx-auto pt-8 pb-4 text-left">
+        <h1 className="text-xl sm:text-2xl text-white font-light tracking-tight">
+          TwitterScan Dashboard
+        </h1>
+        <p className="text-sm text-[#999] mt-1">
+          Realtime tweet tracking for Solana tokens.
+          <span className="text-[#00FF88] ml-1">powered by on-chain vibes</span>
+        </p>
+      </div>
+
+      <div className="px-6 max-w-5xl mx-auto mt-2 mb-10">
+        <div className="relative">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={handleSearchInput}
+            placeholder="Search token..."
+            className="w-full px-5 py-3 bg-[#14141A] border border-[#2A2A2A] rounded-lg text-white placeholder-[#777] focus:ring-2 focus:ring-[#FF4DFF] outline-none"
+          />
+          <MagnifyingGlassIcon className="w-5 h-5 absolute right-4 top-3 text-[#FF4DFF]" />
+          {searchInput && (
+            <div className="absolute w-full bg-[#1A1A1A] border border-[#2A2A2A] mt-2 rounded-lg shadow-xl z-20 max-h-60 overflow-y-auto">
+              {filteredOptions.map((token, i) => (
+                <div
+                  key={i}
+                  onClick={() => handleSelectToken(token.token_symbol)}
+                  className="px-4 py-2 text-sm hover:bg-[#2C2C2C] cursor-pointer flex justify-between"
+                >
+                  <span>{token.token_symbol}</span>
+                  <span className="text-[#FF4DFF]">({token.token_name})</span>
                 </div>
-              )}
+              ))}
             </div>
-          </div>
-
-          <div className="mt-8 h-1 w-48 mx-auto bg-gradient-to-r from-transparent via-[#00F5A0] to-transparent animate-pulse" />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {watchlist.map(({ token, total, intervals, history }, index) => (
-            <div
-              key={index}
-              className="relative p-5 rounded-2xl backdrop-blur-sm bg-[#101216]/70 border border-[#00F5A0]/10 
-              shadow-[0_0_12px_#00F5A020] transition-transform hover:scale-[1.015]"
-            >
-              <button
-                onClick={() => handleRemoveToken(token)}
-                className="absolute top-2 right-2 text-[#94a1b2] hover:text-red-500"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-white">{token}</h2>
-                <span className="text-sm text-[#00F5A0]">{total.toLocaleString()} tweets</span>
-              </div>
-              <ul className="text-xs text-[#AAA] space-y-1 mb-4">
-                {Object.entries(intervals).map(([label, value]) => (
-                  <li key={label} className="flex justify-between">
-                    <span>{label}</span>
-                    <span>{value.toLocaleString()}</span>
-                  </li>
-                ))}
-              </ul>
-              <Bar
-                data={{
-                  labels: ["1h", "6h", "12h", "24h", "48h"],
-                  datasets: [
-                    {
-                      label: "Tweet Volume",
-                      data: history,
-                      backgroundColor: "rgba(0, 245, 160, 0.6)",
-                      borderRadius: 6,
-                    },
-                  ],
-                }}
-                options={{
-                  plugins: { legend: { display: false } },
-                  responsive: true,
-                  animation: { duration: 1000, easing: "easeOutBounce" },
-                  scales: {
-                    x: {
-                      ticks: { color: "#E5E5E5" },
-                      grid: { color: "#222" },
-                    },
-                    y: {
-                      ticks: { color: "#E5E5E5" },
-                      grid: { color: "#222" },
-                    },
-                  },
-                }}
-                height={180}
-              />
-            </div>
-          ))}
-
-          {/* Empty Add Card */}
-          <div className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-[#00F5A0]/30 text-[#00F5A0] bg-[#101216]/50 hover:bg-[#141820]/50 transition cursor-pointer">
-            <PlusIcon className="w-10 h-10 mb-2" />
-            <span className="text-sm">Add Token</span>
-          </div>
+          )}
         </div>
       </div>
+
+      <div className="px-6 max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
+        {watchlist.length === 0 && (
+          <div className="col-span-full text-center text-[#777] italic mt-8">
+            Your watchlist is empty. Search for a token above to get started.
+          </div>
+        )}
+
+        {watchlist.map(({ token, total, intervals, history }, index) => (
+          <div
+            key={index}
+            className="relative bg-[#13131A] border border-[#2A2A2A] p-5 rounded-xl transition-all hover:shadow-[0_0_15px_#FF4DFF40]"
+          >
+            <button
+              onClick={() => handleRemoveToken(token)}
+              className="absolute top-3 right-3 text-[#888] hover:text-red-500"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-base text-white font-normal">{token}</h2>
+              <span className="text-sm text-[#FF4DFF]">
+                {total.toLocaleString()} tweets
+              </span>
+            </div>
+
+            <ul className="text-sm text-[#AAA] space-y-1 mb-4">
+              {Object.entries(intervals).map(([label, value]) => (
+                <li key={label} className="flex justify-between">
+                  <span>{label}</span>
+                  <span>{value.toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Bar
+              data={{
+                labels: ["1h", "6h", "12h", "24h", "48h"],
+                datasets: [
+                  {
+                    label: "Tweet Volume",
+                    data: history,
+                    backgroundColor: "rgba(255, 77, 255, 0.5)",
+                    borderRadius: 6,
+                  },
+                ],
+              }}
+              options={{
+                plugins: { legend: { display: false } },
+                responsive: true,
+                animation: { duration: 800, easing: "easeOutQuart" },
+                scales: {
+                  x: { ticks: { color: "#EAEAEA" }, grid: { color: "#222" } },
+                  y: { ticks: { color: "#EAEAEA" }, grid: { color: "#222" } },
+                },
+              }}
+              height={180}
+            />
+
+            <button
+              onClick={() => handleShare(token, total)}
+              className="mt-4 flex items-center gap-2 bg-[#1DA1F2] hover:bg-[#1A91DA] text-white text-sm py-2 px-4 rounded-lg transition-all"
+            >
+              <ArrowUpRightIcon className="w-4 h-4" />
+              Share to Twitter
+            </button>
+          </div>
+        ))}
+      </div>
+
       <Footer />
     </div>
   );
