@@ -25,6 +25,7 @@
     "framer-motion": "^12.9.4",
     "fuse.js": "^7.1.0",
     "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.477.0",
     "motion": "^12.4.1",
