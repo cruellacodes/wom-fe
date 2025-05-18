@@ -41,6 +41,7 @@ const TokenInfoCard = React.memo(function TokenInfoCard({ token }) {
 
   return (
     <div className="relative p-5 rounded-2xl bg-[#0A0F0A] border border-gray-800/60 shadow-xl transition-all duration-300 hover:border-green-500/30">
+      {/* DEX Link */}
       <div className="absolute top-4 right-4">
         <a
           href={token.dex_url}
@@ -52,18 +53,19 @@ const TokenInfoCard = React.memo(function TokenInfoCard({ token }) {
         </a>
       </div>
 
+      {/* Header Info */}
       <div className="flex items-center gap-4 mb-4">
         <img
-          src={solanaIcon}
+          src={token.image_url || solanaIcon}
           alt={token.token_symbol}
-          className="w-10 h-10 rounded-lg shadow-sm"
+          className="w-10 h-10 rounded-lg shadow-sm border border-green-900 object-cover"
         />
         <div>
           <h2 className="text-lg font-semibold text-green-300">
             {token.token_symbol?.toUpperCase()}
           </h2>
           <p className="text-xs text-gray-500">
-            {token.age_hours}h old • {token.maker_count} Makers
+            {token.age ? `${token.age} old` : "—"}
           </p>
         </div>
       </div>
@@ -95,7 +97,7 @@ const TokenInfoCard = React.memo(function TokenInfoCard({ token }) {
         </p>
       </div>
 
-      {/* Market Data */}
+      {/* Market Stats */}
       <div className="grid grid-cols-2 gap-4 text-sm">
         {marketData.map((item, i) => (
           <div key={i} className="flex flex-col bg-[#111] p-3 rounded-xl">
@@ -114,9 +116,9 @@ const TokenInfoCard = React.memo(function TokenInfoCard({ token }) {
 
 TokenInfoCard.propTypes = {
   token: PropTypes.shape({
+    image_url: PropTypes.string,
     token_symbol: PropTypes.string,
-    age_hours: PropTypes.number,
-    maker_count: PropTypes.number,
+    age: PropTypes.string, 
     wom_score: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     dex_url: PropTypes.string,
     market_cap_usd: PropTypes.number,

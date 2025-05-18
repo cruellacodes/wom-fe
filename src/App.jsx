@@ -21,6 +21,7 @@ import PolarChart from "./components/PolarChart";
 import About from "./components/About";
 import TwitterScan from "./components/TwitterScan";
 import AppLoader from "./components/Loader";
+import ShillScan from "./components/ShillerScan"
 
 import { useActiveTokens } from "./hooks/useActiveTokens";
 import { useTokenTweets } from "./hooks/useTokenTweets";
@@ -246,6 +247,7 @@ function App() {
       />
       <Route path="/about" element={<About />} />
       <Route path="/twitterscan" element={<TwitterScan />} />
+      <Route path="/shillscan" element={<ShillScan />} />
     </Routes>
   );
 }

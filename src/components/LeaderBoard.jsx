@@ -56,26 +56,41 @@ const Leaderboard = React.memo(
 
     const filteredTokens = useMemo(() => {
       let sorted = [...tokens].sort((a, b) => {
-        const aVal = a[sortBy] ?? 0;
-        const bVal = b[sortBy] ?? 0;
+        let aVal = a[sortBy] ?? 0;
+        let bVal = b[sortBy] ?? 0;
+      
+        if (sortBy === "age") {
+          aVal = parseAgeToHours(a.age);
+          bVal = parseAgeToHours(b.age);
+        }
+      
         return sortOrder * (aVal - bVal);
-      });
+      });      
 
       // Category filter
       if (categoryFilter === "Believe") {
         sorted = sorted.filter((t) => t.is_believe === true);
       }
 
-      // Age filter
+      // Parses "2d", "3h", "<1h", etc. into numeric hours
+      const parseAgeToHours = (ageStr) => {
+        if (!ageStr) return Infinity;
+        if (ageStr === "<1h") return 0.5;
+        if (ageStr.endsWith("h")) return parseFloat(ageStr.replace("h", ""));
+        if (ageStr.endsWith("d")) return parseFloat(ageStr.replace("d", "")) * 24;
+        return Infinity;
+      };
+
       sorted = sorted.filter((token) => {
-        const age = token.age_hours ?? Infinity;
+        const age = parseAgeToHours(token.age);
         switch (ageFilter) {
           case "6h": return age <= 6;
-          case "24h": return age < 24;
+          case "24h": return age <= 24;
           case "5d": return age <= 120;
           default: return true;
         }
       });
+
 
       // Search
       return sorted.filter((token) =>
@@ -168,9 +183,8 @@ const Leaderboard = React.memo(
                   "token_symbol",
                   "wom_score",
                   "market_cap_usd",
-                  "age_hours",
+                  "age",
                   "volume_usd",
-                  "maker_count",
                   "liquidity_usd",
                 ].map((key) => (
                   <th
@@ -198,23 +212,32 @@ const Leaderboard = React.memo(
 
                     {/* Token Symbol */}
                     <td className="p-3 font-medium text-white whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1">
-                        {(token.token_symbol ?? "—").toUpperCase()}
-                        {token.dex_url && (
-                          <a
-                            href={token.dex_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-green-400"
-                          >
-                            <AiOutlineLineChart className="w-4 h-4 text-gray-400" />
-                          </a>
+                      <span className="inline-flex items-center gap-2">
+                        {token.image_url && (
+                          <img
+                            src={token.image_url}
+                            alt={`${token.token_symbol} logo`}
+                            className="w-5 h-5 rounded-full object-cover border border-green-800"
+                          />
                         )}
-                        {token.is_believe && (
-                          <span className="ml-2 text-xs text-green-400 bg-green-900 px-2 py-0.5 rounded-full">
-                            Believe
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1">
+                          {(token.token_symbol ?? "—").toUpperCase()}
+                          {token.dex_url && (
+                            <a
+                              href={token.dex_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-green-400"
+                            >
+                              <AiOutlineLineChart className="w-4 h-4 text-gray-400" />
+                            </a>
+                          )}
+                          {token.is_believe && (
+                            <span className="ml-2 text-xs text-green-400 bg-green-900 px-2 py-0.5 rounded-full">
+                              Believe
+                            </span>
+                          )}
+                        </span>
                       </span>
                     </td>
 
@@ -238,14 +261,11 @@ const Leaderboard = React.memo(
 
                     {/* Age Hours */}
                     <td className="p-3 whitespace-nowrap">
-                      {token.age_hours != null ? (token.age_hours < 1 ? "<1" : token.age_hours) : "—"}
+                      {token.age ? token.age : "—"}
                     </td>
 
                     {/* Volume USD */}
                     <td className="p-3 whitespace-nowrap">{safeFormatNumber(token.volume_usd)}</td>
-
-                    {/* Maker Count */}
-                    <td className="p-3 whitespace-nowrap">{safeFormatNumber(token.maker_count)}</td>
 
                     {/* Liquidity USD */}
                     <td className="p-3 whitespace-nowrap">{safeFormatNumber(token.liquidity_usd)}</td>
