@@ -284,7 +284,7 @@ const TwitterScan = () => {
                   onClick={() => handleSelectToken(token.token_symbol)}
                   className={`px-4 py-2 text-sm flex justify-between font-mono cursor-pointer ${
                     i === highlightedIndex
-                      ? "bg-[#333] text-[#FF4DFF]" // 👈 highlight
+                      ? "bg-[#333] text-[#FF4DFF]" 
                       : "hover:bg-[#2C2C2C]"
                   }`}
                 >

@@ -63,7 +63,7 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
         token_symbol: tokenData.symbol,
         token_name: tokenData.name,
         address: tokenData.address,
-        age_hours: tokenData.ageHours || "N/A",
+        age: tokenData.age || "N/A",
         market_cap_usd: tokenData.marketCap || 0,
         volume_usd: tokenData.volume24h || 0,
         liquidity_usd: tokenData.liquidity || 0,
