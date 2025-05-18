@@ -50,8 +50,7 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
   
 
   const fetchTokenFromBackend = async (input) => {
-    const chainId = "solana";
-    const tokenRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search-token/${chainId}/${input}`);
+    const tokenRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search-token/${input}`);
     if (!tokenRes.ok) throw new Error("Token not found");
     const tokenData = await tokenRes.json();
 
