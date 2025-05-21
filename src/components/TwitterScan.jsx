@@ -119,63 +119,66 @@ const TwitterScan = () => {
   
     return buckets;
   };
-  
-
-  const fetchLiveBuckets = async (token_symbol) => {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/live-tweet-buckets/?token_symbol=${encodeURIComponent(token_symbol)}`
-    );
-    const data = await res.json();
-    return data?.bucket_data || null;
-  };
 
   const handleSelectToken = async (token_symbol) => {
     const raw = token_symbol;
     const symbol = raw.toUpperCase();
     const normalized = symbol.toLowerCase();
     if (watchlist.some((t) => t.token === symbol)) return;
-
+  
     const { data: tokenData } = await supabase
       .from("tokens")
       .select("is_active")
       .eq("token_symbol", normalized)
       .maybeSingle();
-
+  
     if (!tokenData?.is_active) return;
-
+  
     try {
-      const { data: tweets } = await supabase
+      let tweets = [];
+  
+      // Step 1: Try fetching tweets from Supabase
+      const { data: supabaseTweets } = await supabase
         .from("tweets")
         .select("created_at")
         .eq("token_symbol", normalized)
         .gte("created_at", new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString());
-
-
-      const buckets = tweets?.length
-        ? groupIntoBuckets(tweets)
-        : await fetchLiveBuckets(symbol);
-
-      if (buckets) {
-        setWatchlist((prev) => [
-          ...prev,
-          {
-            token: symbol,
-            total: Object.values(buckets).reduce((a, b) => a + b, 0),
-            intervals: buckets,
-            history: ["1h", "3h", "6h", "12h", "24h", "48h"].map((k) => buckets[k]),
-          },
-          
-        ]);
+  
+      if (supabaseTweets?.length > 0) {
+        tweets = supabaseTweets;
       } else {
-        alert("No tweet data found for this token.");
+        // Step 2: Fallback to backend endpoint
+        const fallbackRes = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/tweets/${normalized}`
+        );
+        const fallbackData = await fallbackRes.json();
+        tweets = fallbackData?.tweets || [];
       }
+  
+      // Step 3: Bucket tweets
+      if (tweets.length === 0) {
+        alert("No tweet data found for this token.");
+        return;
+      }
+  
+      const buckets = groupIntoBuckets(tweets);
+  
+      setWatchlist((prev) => [
+        ...prev,
+        {
+          token: symbol,
+          total: Object.values(buckets).reduce((a, b) => a + b, 0),
+          intervals: buckets,
+          history: ["1h", "3h", "6h", "12h", "24h", "48h"].map((k) => buckets[k]),
+        },
+      ]);
     } catch (err) {
       console.error("Token selection failed:", err);
     }
-
+  
     setSearchInput("");
     setFilteredOptions(tokenOptions);
-  };
+  };  
 
   const handleSearchInput = (e) => {
     const val = e.target.value;
