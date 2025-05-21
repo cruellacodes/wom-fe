@@ -1,11 +1,12 @@
 // eslint-disable-next-line no-unused-vars
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import toast from "react-hot-toast";
 
 export function useActiveTokens() {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
+  const shownToastTokens = useRef(new Set());
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -16,6 +17,7 @@ export function useActiveTokens() {
           .eq("is_active", true)
           .throwOnError();
         setTokens(data || []);
+        data?.forEach(t => shownToastTokens.current.add(t.token_symbol)); // mark as seen
       } catch (err) {
         console.error("Token fetch failed:", err);
       } finally {
@@ -38,14 +40,18 @@ export function useActiveTokens() {
 
             switch (eventType) {
               case "INSERT":
-                if (newToken.is_active && !updated.some(t => t.token_symbol === newToken.token_symbol)) {
+                if (newToken.is_active && !shownToastTokens.current.has(newToken.token_symbol)) {
                   toast.custom(() => (
-                    <div className="bg-[#0A0F0A] border border-green-400 text-green-300 px-4 py-3 rounded-lg shadow-md text-sm flex items-center space-x-2 animate-fadeIn">
-                      <span>
-                        New token added: <strong>{newToken.token_symbol.toUpperCase()}</strong>
+                    <div className="w-[320px] bg-[#121212] border border-green-500/40 text-white px-4 py-3 rounded-xl shadow-lg backdrop-blur-sm flex flex-col gap-1 animate-fadeIn transition-all">
+                      <span className="text-sm font-semibold tracking-wide text-green-400">
+                        New Token Added
+                      </span>
+                      <span className="text-xs uppercase text-gray-300 tracking-widest">
+                        {newToken.token_symbol}
                       </span>
                     </div>
-                  ));
+                  ));                  
+                  shownToastTokens.current.add(newToken.token_symbol);
                   updated.push(newToken);
                 }
                 break;
