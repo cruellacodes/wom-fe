@@ -54,7 +54,6 @@ const Header = () => {
           </div>
         </div>
 
-
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
           {navItems.map(({ icon, label, action }) => (
@@ -73,6 +72,17 @@ const Header = () => {
           >
             &gt;_ EXEC TWITTERSCAN
           </button>
+          <div className="relative">
+            <button
+              onClick={() => navigate("/shillerscan")}
+              className="px-4 py-2 font-mono tracking-widest text-sm text-cyan-400 bg-[#001f2e] hover:bg-[#003f5c] rounded-md transition"
+            >
+              &gt;_ EXEC SHILLERSCAN
+            </button>
+            <span className="absolute -top-2 -right-2 text-[10px] font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded shadow-md uppercase tracking-wide">
+              BETA
+            </span>
+          </div>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -117,6 +127,20 @@ const Header = () => {
           >
             &gt;_ EXEC TWITTERSCAN
           </button>
+          <div className="relative">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/shillerscan");
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-mono tracking-widest text-cyan-400 bg-[#001f2e] hover:bg-[#003f5c] rounded-md transition"
+            >
+              &gt;_ EXEC SHILLERSCAN
+            </button>
+            <span className="absolute -top-2 -right-2 text-[10px] font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded shadow-md uppercase tracking-wide">
+              BETA
+            </span>
+          </div>
         </div>
       </div>
     </header>
