@@ -46,22 +46,37 @@ const Footer = () => {
             ))}
           </ul>
 
-          <div className="flex gap-4">
-            {[
-              { icon: <SiX className="w-5 h-5" />, link: "https://x.com/wordofmouth_ai" },
-              { icon: <FaTelegramPlane className="w-5 h-5" />, link: "https://t.me/YOUR_HANDLE" },
-              { icon: <FaGithub className="w-5 h-5" />, link: "https://github.com/cruellacodes" },
-            ].map(({ icon, link }, idx) => (
+          <div className="flex flex-col items-start md:items-end gap-2">
+            <div className="flex gap-4">
+              {[
+                { icon: <SiX className="w-5 h-5" />, link: "https://x.com/wordofmouth_ai" },
+                { icon: <FaTelegramPlane className="w-5 h-5" />, link: "https://t.me/YOUR_HANDLE" },
+                { icon: <FaGithub className="w-5 h-5" />, link: "https://github.com/cruellacodes" },
+              ].map(({ icon, link }, idx) => (
+                <a
+                  key={idx}
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition hover:scale-110"
+                >
+                  {icon}
+                </a>
+              ))}
+            </div>
+
+            {/* Made by cruellacodes note */}
+            <p className="text-xs text-white/50">
+              made by{" "}
               <a
-                key={idx}
-                href={link}
+                href="https://x.com/Cruellacodes"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition hover:scale-110"
+                className=" text-white/70 hover:text-white"
               >
-                {icon}
+                cruellacodes
               </a>
-            ))}
+            </p>
           </div>
         </div>
       </div>
