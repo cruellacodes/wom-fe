@@ -1,12 +1,18 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/prop-types */
 // eslint-disable-next-line no-unused-vars
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Search } from "lucide-react";
 
-const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTweets }) => {
+const TokenSearch = ({
+  tokens = [],
+  tweets = [],
+  setSearchedToken,
+  setFilteredTweets,
+  setIsFetchingTweets,
+  setIsAnalyzingSentiment,
+}) => {
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [waitingForAddress, setWaitingForAddress] = useState(false);
@@ -15,14 +21,13 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
   const lowerQuery = query.toLowerCase();
 
   const isProbablyAddress = (input) => input.length >= 30;
-  
+
   const resetUI = () => {
     setQuery("");
     setSuggestions([]);
-    setLoading(false);
     setWaitingForAddress(false);
     setLastSymbolAttempt("");
-  };  
+  };
 
   const matchedSuggestions = useMemo(() => {
     if (!lowerQuery) return [];
@@ -32,9 +37,8 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
         token_name.toLowerCase().includes(lowerQuery) ||
         address.toLowerCase() === lowerQuery
       )
-      .slice(0, 20); // increase for debugging
+      .slice(0, 20);
   }, [tokens, lowerQuery]);
-  
 
   useEffect(() => {
     setSuggestions(matchedSuggestions);
@@ -47,42 +51,39 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
       setLastSymbolAttempt("");
     }
   }, [query]);
+
+  // fetch token info
+  const fetchTokenInfo = async (input) => {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search-token/${input}`);
+    if (!res.ok) throw new Error("Token not found");
+    return await res.json();
+  };
+
+  // fetch tweets for the symbol
+  const fetchTweetsForToken = async (symbol) => {
+    const token_symbol = symbol.replace(/^\$/, "").toLowerCase();
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweets/${token_symbol}`);
+    if (!res.ok) throw new Error("Tweet fetch failed");
   
-
-  const fetchTokenFromBackend = async (input) => {
-    const tokenRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search-token/${input}`);
-    if (!tokenRes.ok) throw new Error("Token not found");
-    const tokenData = await tokenRes.json();
-
-    const tweetRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweets/${tokenData.symbol}`);
-    const tweetData = await tweetRes.json();
-
+    const tweetData = await res.json();
+  
     return {
-      match: {
-        token_symbol: tokenData.symbol,
-        token_name: tokenData.name,
-        address: tokenData.address,
-        age: tokenData.age || "N/A",
-        market_cap_usd: tokenData.marketCap || 0,
-        volume_usd: tokenData.volume24h || 0,
-        liquidity_usd: tokenData.liquidity || 0,
-        priceUsd: tokenData.priceUsd || "N/A",
-        dex_url: tokenData.dexUrl || "#",
-        pricechange1h: tokenData.priceChange1h || 0,
-        wom_score: tweetData.wom_score || "Calculating...",
-      },
-      enrichedTweets: (tweetData.tweets || []).map((t) => ({ ...t, token_symbol: tokenData.symbol.toLowerCase() })),
+      tweets: (tweetData.tweets || []).map((t) => ({
+        ...t,
+        token_symbol: token_symbol.toLowerCase(),
+      })),
+      wom_score: tweetData.wom_score ?? 1.0,
     };
   };
+  
 
   const handleSearch = async (input = query) => {
     if (!input) return;
-    setLoading(true);
   
     const lowerInput = input.toLowerCase();
   
-    // STEP 1: check local token list
-    let match = tokens.find(
+    // STEP 1: check local tokens (symbol, name, address)
+    const match = tokens.find(
       (t) =>
         t.token_symbol?.toLowerCase() === lowerInput ||
         t.token_name?.toLowerCase() === lowerInput ||
@@ -90,39 +91,76 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
     );
   
     if (match) {
+      // 🔥 Token already in local list — no backend call
+      setSearchedToken(match);
       setFilteredTweets(
         tweets.filter(
           (t) => t.token_symbol?.toLowerCase() === match.token_symbol?.toLowerCase()
         )
       );
-      setSearchedToken(match);
       resetUI();
       return;
     }
   
-    // STEP 2: check if input is probably a valid address
+    // STEP 2: address mode → try fetching from backend
     if (isProbablyAddress(lowerInput)) {
       try {
-        console.log("Direct fetch from backend using address:", lowerInput);
-        const { match: fetchedToken, enrichedTweets } = await fetchTokenFromBackend(lowerInput);
-        setFilteredTweets(enrichedTweets);
+        setIsFetchingTweets(true);
+        setIsAnalyzingSentiment(true);
+  
+        // Fetch token info FIRST 
+        const tokenData = await fetchTokenInfo(lowerInput);
+        const fetchedToken = {
+          token_symbol: tokenData.symbol,
+          token_name: tokenData.token_name,
+          address: tokenData.address,
+          age: tokenData.age || "N/A",
+          market_cap_usd: tokenData.marketCap || 0,
+          volume_usd: tokenData.volume24h || 0,
+          liquidity_usd: tokenData.liquidity || 0,
+          priceUsd: tokenData.priceUsd || "N/A",
+          dex_url: tokenData.dexUrl || "#",
+          pricechange1h: tokenData.priceChange1h || 0,
+          wom_score: "Calculating...",
+        };
+  
+        // Show token info immediately in TokenInfoCard
         setSearchedToken(fetchedToken);
-        resetUI();
-        return;
+  
+        // Now fetch tweets + sentiment
+        const tweetData = await fetchTweetsForToken(tokenData.symbol);
+        const enrichedTweets = (tweetData.tweets || []).map((t) => ({
+          ...t,
+          token_symbol: tokenData.symbol.toLowerCase(),
+        }));
+  
+        setFilteredTweets(enrichedTweets);
+  
+        // Update final WOM score after sentiment finishes
+        setSearchedToken((prev) => ({
+          ...prev,
+          wom_score: tweetData.wom_score ?? "N/A",
+        }));
+  
       } catch (err) {
         console.error("Backend fetch failed:", err);
-        setLoading(false);
         setSuggestions([]);
         setWaitingForAddress(false);
         setLastSymbolAttempt("");
-        return;
+      } finally {
+        setIsFetchingTweets(false);
+        setIsAnalyzingSentiment(false);
+        // Only reset query/suggestions — don’t wipe searched token or tweets
+        setQuery("");
+        setSuggestions([]);
       }
+      return;
     }
   
-    // STEP 3: fallback — probably a bad symbol, prompt for address
+    // STEP 3: fallback — not in local list, not an address
     setLastSymbolAttempt(input);
     setWaitingForAddress(true);
-    setLoading(false);
+    setSuggestions([]);
   };  
 
   const handleKeyDown = (e) => {
@@ -142,8 +180,7 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
     setSuggestions([]);
     setWaitingForAddress(false);
     setLastSymbolAttempt("");
-    setLoading(false);
-  
+
     const fallback = tokens[0];
     setSearchedToken(fallback);
     setFilteredTweets(
@@ -152,7 +189,6 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
       )
     );
   };
-  
 
   return (
     <div className="relative w-full z-50 font-mono group">
@@ -162,7 +198,6 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
           placeholder="> search $token or address"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          
           onKeyDown={handleKeyDown}
           className="terminal-placeholder w-full pl-12 pr-10 py-3 rounded-xl bg-black/30 border border-[#14f195]/30 focus:ring-2 focus:ring-[#14f195] backdrop-blur-md text-[#14f195] placeholder-[#14f195]/70 outline-none font-mono text-sm transition-all duration-200"
         />
@@ -194,7 +229,6 @@ const TokenSearch = ({ tokens = [], tweets = [], setSearchedToken, setFilteredTw
         </ul>
       )}
 
-      {loading && <p className="text-xs text-[#14f195] mt-2 animate-pulse font-mono">fetching tweets...</p>}
       {waitingForAddress && (
         <p className="text-xs text-[#FBBF24] mt-2 font-mono">
           Couldn&apos;t find <span className="font-bold">${lastSymbolAttempt}</span>. Please paste its token address.

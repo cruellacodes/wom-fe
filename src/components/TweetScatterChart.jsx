@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useMemo } from "react";
 import * as d3 from "d3";
 import Logo from "../assets/logo.jpg";
 
-const TweetScatterChart = ({ searchedToken, tweets }) => {
+const TweetScatterChart = ({ searchedToken, tweets, isFetchingTweets, isAnalyzingSentiment }) => {
   const svgRef = useRef();
 
   const recentTweets = useMemo(() => {
@@ -33,7 +33,7 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       tweetUrl: `https://x.com/${tweet.user_name}/status/${tweet.tweet_id}`,
     }));
   }, [recentTweets]);
-
+  
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -153,6 +153,22 @@ const TweetScatterChart = ({ searchedToken, tweets }) => {
       .attr("r", 12);
 
   }, [chartData]);
+
+  if (isFetchingTweets) {
+    return (
+      <div className="flex items-center justify-center h-64 font-mono text-[#14f195] animate-pulse">
+        Fetching tweets from X...
+      </div>
+    );
+  }
+  
+  if (isAnalyzingSentiment) {
+    return (
+      <div className="flex items-center justify-center h-64 font-mono text-[#9945FF] animate-pulse">
+        Analyzing sentiment...
+      </div>
+    );
+  }
 
   return (
     <div className="relative p-5 rounded-lg shadow-md" style={{
