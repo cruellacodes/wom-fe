@@ -83,6 +83,17 @@ const Header = () => {
               BETA
             </span>
           </div>
+          <div className="relative">
+            <button
+              onClick={() => navigate("/stocksanalyzer")}
+              className="px-4 py-2 font-mono tracking-widest text-sm text-pink-400 bg-[#2a003f] hover:bg-[#440066] rounded-md transition"
+            >
+              &gt;_ EXEC STOCKSANALYZER
+            </button>
+            <span className="absolute -top-2 -right-2 text-[10px] font-bold bg-yellow-600 text-white px-1.5 py-0.5 rounded shadow-md uppercase tracking-wide">
+              SOON
+            </span>
+          </div>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -139,6 +150,20 @@ const Header = () => {
             </button>
             <span className="absolute -top-2 -right-2 text-[10px] font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded shadow-md uppercase tracking-wide">
               BETA
+            </span>
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/stocksanalyzer");
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-mono tracking-widest text-pink-400 bg-[#2a003f] hover:bg-[#440066] rounded-md transition"
+            >
+              &gt;_ EXEC STOCKSANALYZER
+            </button>
+            <span className="absolute -top-2 -right-2 text-[10px] font-bold bg-yellow-600 text-white px-1.5 py-0.5 rounded shadow-md uppercase tracking-wide">
+              SOON
             </span>
           </div>
         </div>
