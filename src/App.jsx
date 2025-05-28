@@ -67,6 +67,7 @@ function App() {
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
 
 
+
   const nowUtc = useMemo(() => dayjs.utc(), []);
   const tweetsLast24h = useMemo(() => {
     return tweets.filter((t) =>
@@ -209,10 +210,12 @@ function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
                   <div className="lg:col-span-7 relative">
                     <TweetScatterChart
+                      key={`${searchedToken?.token_symbol}-${filteredTweets.length}`}
+                      searchedToken={searchedToken}
                       tweets={filteredTweets}
-                      token={searchedToken}
                       isFetchingTweets={isFetchingTweets}
                       isAnalyzingSentiment={isAnalyzingSentiment}
+                      tokenSymbol={searchedToken?.token_symbol}
                     />
                   </div>
                   <div className="lg:col-span-3">

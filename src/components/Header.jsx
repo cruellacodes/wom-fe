@@ -43,7 +43,7 @@ const Header = () => {
 
         {/* LIVE Badge */}
         <div className="absolute left-1/2 -translate-x-1/2 top-4 md:static md:translate-x-0">
-          <div className="flex items-center gap-2 px-4 py-1 bg-gradient-to-r from-yellow-900/40 via-zinc-900 to-green-800/40 rounded shadow-inner border border-yellow-500/20">
+          <div className="flex items-center gap-2 px-4 py-1 bg-gradient-to-r from-yellow-900/40 via-zinc-900 to-green-800/40 rounded shadow-inner">
             <span className="relative flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75 animate-heartbeat"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-300 shadow-[0_0_6px_#facc15]"></span>
@@ -53,6 +53,7 @@ const Header = () => {
             </span>
           </div>
         </div>
+
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
