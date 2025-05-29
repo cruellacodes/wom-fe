@@ -11,7 +11,8 @@ const getScoreColor = (score = 0) => {
   return "bg-red-500 shadow-red-500/40";
 };
 
-const TokenInfoCard = React.memo(function TokenInfoCard({ token }) {
+// eslint-disable-next-line react/prop-types
+const TokenInfoCard = React.memo(function TokenInfoCard({ token, isLoading }) {
   if (!token) return null;
 
   const scoreColor = useMemo(() => getScoreColor(Number(token.wom_score)), [token.wom_score]);
@@ -38,6 +39,20 @@ const TokenInfoCard = React.memo(function TokenInfoCard({ token }) {
     ],
     [token]
   );
+
+  if (isLoading) {
+    return (
+      <div className="w-full p-4 rounded-xl bg-black/30 border border-gray-800 animate-pulse space-y-4">
+        <div className="h-6 w-32 bg-gray-700 rounded" />
+        <div className="h-4 w-24 bg-gray-700 rounded" />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-5 bg-gray-700 rounded col-span-1" />
+          <div className="h-5 bg-gray-700 rounded col-span-1" />
+          <div className="h-5 bg-gray-700 rounded col-span-2" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative p-5 rounded-2xl bg-[#0A0F0A] border border-gray-800/60 shadow-xl transition-all duration-300 hover:border-green-500/30">

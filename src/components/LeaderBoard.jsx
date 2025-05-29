@@ -23,10 +23,19 @@ const Leaderboard = React.memo(
     const [sortBy, setSortBy] = useState("wom_score");
     const [sortOrder, setSortOrder] = useState(-1);
     const [searchQuery, setSearchQuery] = useState("");
-    const [ageFilter, setAgeFilter] = useState("5d");
-    const [categoryFilter, setCategoryFilter] = useState("Trending"); // NEW
+    const [ageFilter, setAgeFilter] = useState("All");
+    const [categoryFilter, setCategoryFilter] = useState("Trending");
     const TokenSentimentChartRef = useRef(null);
 
+    const formatLaunchpadLabel = (value) => {
+      const map = {
+        pumpfun: "pump.fun",
+        bonk: "BONK",
+        boop: "BOOP",
+      };
+      return map[value.toLowerCase()] || value;
+    };
+    
     useEffect(() => {
       if (setScrollTokenSentimentChart) {
         setScrollTokenSentimentChart(() =>
@@ -54,43 +63,43 @@ const Leaderboard = React.memo(
       return num.toLocaleString();
     };
 
+     // Parses "2d", "3h", "<1h", etc. into numeric hours
+    const parseAgeToHours = (ageStr) => {
+      if (!ageStr) return Infinity;
+      if (ageStr === "<1h") return 0.5;
+      if (ageStr.endsWith("h")) return parseFloat(ageStr.replace("h", ""));
+      if (ageStr.endsWith("d")) return parseFloat(ageStr.replace("d", "")) * 24;
+      return Infinity;
+    };
+
     const filteredTokens = useMemo(() => {
       let sorted = [...tokens].sort((a, b) => {
         let aVal = a[sortBy] ?? 0;
         let bVal = b[sortBy] ?? 0;
-      
+    
         if (sortBy === "age") {
           aVal = parseAgeToHours(a.age);
           bVal = parseAgeToHours(b.age);
         }
-      
+    
         return sortOrder * (aVal - bVal);
-      });      
-
-      // Category filter
-      if (categoryFilter === "Believe") {
-        sorted = sorted.filter((t) => t.is_believe === true);
-      }
-
-      // Parses "2d", "3h", "<1h", etc. into numeric hours
-      const parseAgeToHours = (ageStr) => {
-        if (!ageStr) return Infinity;
-        if (ageStr === "<1h") return 0.5;
-        if (ageStr.endsWith("h")) return parseFloat(ageStr.replace("h", ""));
-        if (ageStr.endsWith("d")) return parseFloat(ageStr.replace("d", "")) * 24;
-        return Infinity;
-      };
+      });
 
       sorted = sorted.filter((token) => {
         const age = parseAgeToHours(token.age);
         switch (ageFilter) {
           case "6h": return age <= 6;
           case "24h": return age <= 24;
-          case "5d": return age <= 120;
+          case "1w": return age <= 168; // 7 days * 24
+          case "All": return true;
           default: return true;
-        }
+        }        
       });
-
+      
+      // Category filter
+      if (categoryFilter !== "Trending") {
+        sorted = sorted.filter((t) => t.launchpad?.toLowerCase() === categoryFilter.toLowerCase());
+      }  
 
       // Search
       return sorted.filter((token) =>
@@ -136,7 +145,7 @@ const Leaderboard = React.memo(
             className="px-3 py-2 bg-[#111] border border-gray-700 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600 w-full md:w-64 text-sm"
           />
           <div className="flex gap-2">
-            {["Trending", "Believe"].map((val) => (
+            {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => (
               <button
                 key={val}
                 onClick={() => {
@@ -154,7 +163,7 @@ const Leaderboard = React.memo(
             ))}
           </div>
           <div className="flex gap-2">
-            {["6h", "24h", "5d"].map((val) => (
+          {["6h", "24h", "1w", "All"].map((val) => (
               <button
                 key={val}
                 onClick={() => {
@@ -232,9 +241,9 @@ const Leaderboard = React.memo(
                               <AiOutlineLineChart className="w-4 h-4 text-gray-400" />
                             </a>
                           )}
-                          {token.is_believe && (
-                            <span className="ml-2 text-xs text-green-400 bg-green-900 px-2 py-0.5 rounded-full">
-                              Believe
+                          {token.launchpad && token.launchpad !== "unknown" && (
+                            <span className="ml-2 text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded-full">
+                              {formatLaunchpadLabel(token.launchpad)}
                             </span>
                           )}
                         </span>

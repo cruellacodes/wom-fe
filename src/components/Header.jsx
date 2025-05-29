@@ -43,14 +43,12 @@ const Header = () => {
 
         {/* LIVE Badge */}
         <div className="absolute left-1/2 -translate-x-1/2 top-4 md:static md:translate-x-0">
-          <div className="flex items-center gap-2 px-4 py-1 bg-gradient-to-r from-yellow-900/40 via-zinc-900 to-green-800/40 rounded shadow-inner border border-yellow-500/20">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75 animate-heartbeat"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-300 shadow-[0_0_6px_#facc15]"></span>
+          <div className="flex items-center gap-2 px-3 py-1 bg-[#121212] border border-[#333] rounded-full shadow-sm backdrop-blur-md">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF00] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00FF00]"></span>
             </span>
-            <span className="text-xs font-mono text-[#00FF00] tracking-widest">
-              LIVE
-            </span>
+            <span className="text-xs font-mono text-[#00FF00] tracking-widest">LIVE</span>
           </div>
         </div>
 

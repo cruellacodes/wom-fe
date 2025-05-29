@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/prop-types */
 // eslint-disable-next-line no-unused-vars
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Search } from "lucide-react";
+import solanaIcon from "../assets/solana.png";
 
 const TokenSearch = ({
   tokens = [],
@@ -11,6 +12,8 @@ const TokenSearch = ({
   setFilteredTweets,
   setIsFetchingTweets,
   setIsAnalyzingSentiment,
+  fetchIdRef,
+  setIsTokenInfoLoading
 }) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -18,6 +21,7 @@ const TokenSearch = ({
   const [waitingForAddress, setWaitingForAddress] = useState(false);
   const [lastSymbolAttempt, setLastSymbolAttempt] = useState("");
 
+  const suggestionRefs = useRef([]);
   const lowerQuery = query.toLowerCase();
 
   const isProbablyAddress = (input) => input.length >= 30;
@@ -52,47 +56,50 @@ const TokenSearch = ({
     }
   }, [query]);
 
-  // fetch token info
+  useEffect(() => {
+    const el = suggestionRefs.current[selectedIndex];
+    if (el) {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [selectedIndex]);
+
   const fetchTokenInfo = async (input) => {
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search-token/${input}`);
     if (!res.ok) throw new Error("Token not found");
     return await res.json();
   };
 
-  // fetch tweets for the symbol
   const fetchTweetsForToken = async (symbol) => {
     const token_symbol = symbol.replace(/^\$/, "").toLowerCase();
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tweets/${token_symbol}`);
     if (!res.ok) throw new Error("Tweet fetch failed");
-  
+
     const tweetData = await res.json();
-  
+
     return {
       tweets: (tweetData.tweets || []).map((t) => ({
         ...t,
-        token_symbol: token_symbol.toLowerCase(),
+        token_symbol: `$${token_symbol}`, // Force $ prefix
       })),
       wom_score: tweetData.wom_score ?? 1.0,
     };
   };
-  
 
   const handleSearch = async (input = query) => {
     if (!input) return;
-  
+
     const lowerInput = input.toLowerCase();
-  
-    // STEP 1: check local tokens (symbol, name, address)
+
     const match = tokens.find(
       (t) =>
         t.token_symbol?.toLowerCase() === lowerInput ||
         t.token_name?.toLowerCase() === lowerInput ||
         t.address?.toLowerCase() === lowerInput
     );
-  
+
     if (match) {
-      // 🔥 Token already in local list — no backend call
       setSearchedToken(match);
+      setFilteredTweets([]);
       setFilteredTweets(
         tweets.filter(
           (t) => t.token_symbol?.toLowerCase() === match.token_symbol?.toLowerCase()
@@ -101,17 +108,23 @@ const TokenSearch = ({
       resetUI();
       return;
     }
-  
-    // STEP 2: address mode → try fetching from backend
+
     if (isProbablyAddress(lowerInput)) {
+      const currentId = ++fetchIdRef.current;
+    
       try {
         setIsFetchingTweets(true);
         setIsAnalyzingSentiment(true);
-  
-        // Fetch token info FIRST 
+    
+        setIsTokenInfoLoading(true);
         const tokenData = await fetchTokenInfo(lowerInput);
+    
+        if (fetchIdRef.current !== currentId) return;
+    
+        const tokenSymbolWithDollar = `$${tokenData.symbol.toLowerCase()}`;
+    
         const fetchedToken = {
-          token_symbol: tokenData.symbol,
+          token_symbol: tokenSymbolWithDollar,
           token_name: tokenData.token_name,
           address: tokenData.address,
           age: tokenData.age || "N/A",
@@ -121,47 +134,54 @@ const TokenSearch = ({
           priceUsd: tokenData.priceUsd || "N/A",
           dex_url: tokenData.dexUrl || "#",
           pricechange1h: tokenData.priceChange1h || 0,
+          image_url: tokenData.imageUrl || solanaIcon,
           wom_score: "Calculating...",
         };
-  
-        // Show token info immediately in TokenInfoCard
+    
+        if (fetchIdRef.current !== currentId) return;
         setSearchedToken(fetchedToken);
-  
-        // Now fetch tweets + sentiment
+        setIsTokenInfoLoading(false);
+    
         const tweetData = await fetchTweetsForToken(tokenData.symbol);
-        const enrichedTweets = (tweetData.tweets || []).map((t) => ({
+    
+        if (fetchIdRef.current !== currentId) return;
+    
+        const enrichedTweets = tweetData.tweets.map((t) => ({
           ...t,
-          token_symbol: tokenData.symbol.toLowerCase(),
+          token_symbol: tokenSymbolWithDollar,
         }));
-  
+    
+        setFilteredTweets([]);
         setFilteredTweets(enrichedTweets);
-  
-        // Update final WOM score after sentiment finishes
+    
+        if (fetchIdRef.current !== currentId) return;
         setSearchedToken((prev) => ({
           ...prev,
           wom_score: tweetData.wom_score ?? "N/A",
         }));
-  
       } catch (err) {
-        console.error("Backend fetch failed:", err);
-        setSuggestions([]);
-        setWaitingForAddress(false);
-        setLastSymbolAttempt("");
+        if (fetchIdRef.current === currentId) {
+          console.error("Backend fetch failed:", err);
+          setSuggestions([]);
+          setWaitingForAddress(false);
+          setLastSymbolAttempt("");
+        }
       } finally {
-        setIsFetchingTweets(false);
-        setIsAnalyzingSentiment(false);
-        // Only reset query/suggestions — don’t wipe searched token or tweets
-        setQuery("");
-        setSuggestions([]);
+        if (fetchIdRef.current === currentId) {
+          setIsFetchingTweets(false);
+          setIsAnalyzingSentiment(false);
+          setQuery("");
+          setSuggestions([]);
+        }
       }
-      return;
+      return
     }
-  
-    // STEP 3: fallback — not in local list, not an address
+    
+
     setLastSymbolAttempt(input);
     setWaitingForAddress(true);
     setSuggestions([]);
-  };  
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
@@ -171,7 +191,12 @@ const TokenSearch = ({
       e.preventDefault();
       setSelectedIndex((prev) => Math.max(prev - 1, 0));
     } else if (e.key === "Enter") {
-      handleSearch(query.trim());
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        handleSearch(suggestions[selectedIndex].token_symbol);
+      } else {
+        handleSearch(query.trim());
+      }
     }
   };
 
@@ -180,7 +205,11 @@ const TokenSearch = ({
     setSuggestions([]);
     setWaitingForAddress(false);
     setLastSymbolAttempt("");
-
+  
+    fetchIdRef.current++; 
+    setIsFetchingTweets(false);       
+    setIsAnalyzingSentiment(false);
+  
     const fallback = tokens[0];
     setSearchedToken(fallback);
     setFilteredTweets(
@@ -189,6 +218,7 @@ const TokenSearch = ({
       )
     );
   };
+  
 
   return (
     <div className="relative w-full z-50 font-mono group">
@@ -217,13 +247,21 @@ const TokenSearch = ({
           {suggestions.map((token, idx) => (
             <li
               key={token.address}
+              ref={(el) => (suggestionRefs.current[idx] = el)}
               onClick={() => handleSearch(token.token_symbol)}
-              className={`cursor-pointer px-4 py-2 text-sm transition hover:bg-[#14f195]/10 ${
+              className={`cursor-pointer px-4 py-2 text-sm transition flex items-center gap-3 hover:bg-[#14f195]/10 ${
                 selectedIndex === idx ? "bg-[#14f195]/20" : ""
               }`}
             >
-              {token.token_symbol}{" "}
-              <span className="text-xs text-[#9945FF]">({token.token_name})</span>
+              <img
+                src={token.image_url || solanaIcon}
+                alt={token.token_symbol}
+                className="w-5 h-5 rounded-sm object-cover border border-green-900"
+              />
+              <span>
+                {token.token_symbol}{" "}
+                <span className="text-xs text-[#9945FF]">({token.token_name})</span>
+              </span>
             </li>
           ))}
         </ul>
