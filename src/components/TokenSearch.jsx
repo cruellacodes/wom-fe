@@ -12,6 +12,8 @@ const TokenSearch = ({
   setFilteredTweets,
   setIsFetchingTweets,
   setIsAnalyzingSentiment,
+  fetchIdRef,
+  setIsTokenInfoLoading
 }) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -108,13 +110,19 @@ const TokenSearch = ({
     }
 
     if (isProbablyAddress(lowerInput)) {
+      const currentId = ++fetchIdRef.current;
+    
       try {
         setIsFetchingTweets(true);
         setIsAnalyzingSentiment(true);
-
+    
+        setIsTokenInfoLoading(true);
         const tokenData = await fetchTokenInfo(lowerInput);
+    
+        if (fetchIdRef.current !== currentId) return;
+    
         const tokenSymbolWithDollar = `$${tokenData.symbol.toLowerCase()}`;
-
+    
         const fetchedToken = {
           token_symbol: tokenSymbolWithDollar,
           token_name: tokenData.token_name,
@@ -129,35 +137,46 @@ const TokenSearch = ({
           image_url: tokenData.imageUrl || solanaIcon,
           wom_score: "Calculating...",
         };
-
+    
+        if (fetchIdRef.current !== currentId) return;
         setSearchedToken(fetchedToken);
-
+        setIsTokenInfoLoading(false);
+    
         const tweetData = await fetchTweetsForToken(tokenData.symbol);
+    
+        if (fetchIdRef.current !== currentId) return;
+    
         const enrichedTweets = tweetData.tweets.map((t) => ({
           ...t,
           token_symbol: tokenSymbolWithDollar,
         }));
-
+    
         setFilteredTweets([]);
         setFilteredTweets(enrichedTweets);
-
+    
+        if (fetchIdRef.current !== currentId) return;
         setSearchedToken((prev) => ({
           ...prev,
           wom_score: tweetData.wom_score ?? "N/A",
         }));
       } catch (err) {
-        console.error("Backend fetch failed:", err);
-        setSuggestions([]);
-        setWaitingForAddress(false);
-        setLastSymbolAttempt("");
+        if (fetchIdRef.current === currentId) {
+          console.error("Backend fetch failed:", err);
+          setSuggestions([]);
+          setWaitingForAddress(false);
+          setLastSymbolAttempt("");
+        }
       } finally {
-        setIsFetchingTweets(false);
-        setIsAnalyzingSentiment(false);
-        setQuery("");
-        setSuggestions([]);
+        if (fetchIdRef.current === currentId) {
+          setIsFetchingTweets(false);
+          setIsAnalyzingSentiment(false);
+          setQuery("");
+          setSuggestions([]);
+        }
       }
-      return;
+      return
     }
+    
 
     setLastSymbolAttempt(input);
     setWaitingForAddress(true);
@@ -186,7 +205,11 @@ const TokenSearch = ({
     setSuggestions([]);
     setWaitingForAddress(false);
     setLastSymbolAttempt("");
-
+  
+    fetchIdRef.current++; 
+    setIsFetchingTweets(false);       
+    setIsAnalyzingSentiment(false);
+  
     const fallback = tokens[0];
     setSearchedToken(fallback);
     setFilteredTweets(
@@ -195,6 +218,7 @@ const TokenSearch = ({
       )
     );
   };
+  
 
   return (
     <div className="relative w-full z-50 font-mono group">

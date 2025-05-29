@@ -2,7 +2,7 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import * as d3 from "d3";
-import Logo from "../assets/logo.jpg";
+import Logo from "../assets/logo.png";
 
 const TweetScatterChart = ({ searchedToken, tweets, isFetchingTweets, isAnalyzingSentiment }) => {
   const svgRef = useRef();

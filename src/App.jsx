@@ -30,21 +30,21 @@ import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
 
 dayjs.extend(utc);
 
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
+
 function ChartToggle({ show, onToggle }) {
   return (
-    <div className="flex justify-center mt-6 mb-2">
+    <div className="flex justify-center mt-4 mb-2">
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 text-sm text-green-400 border border-green-500 px-4 py-2 rounded hover:bg-green-900 transition"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-green-500 text-xs font-mono tracking-wide text-green-300 bg-[#001d10]/40 hover:bg-[#003322]/60 backdrop-blur-md transition-all"
       >
-        {show ? "Hide Charts" : "Show Charts"}
-        <span
-          className={`transform transition-transform duration-300 ${
+        {show ? "HIDE CHARTS" : "SHOW CHARTS"}
+        <ChevronDownIcon
+          className={`w-3.5 h-3.5 transform transition-transform duration-300 ${
             show ? "rotate-180" : ""
           }`}
-        >
-          ▼
-        </span>
+        />
       </button>
     </div>
   );
@@ -65,8 +65,8 @@ function App() {
   const location = useLocation();
   const [isFetchingTweets, setIsFetchingTweets] = useState(false);
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
-
-
+  const fetchIdRef = useRef(0); 
+  const [isTokenInfoLoading, setIsTokenInfoLoading] = useState(false);
 
   const nowUtc = useMemo(() => dayjs.utc(), []);
   const tweetsLast24h = useMemo(() => {
@@ -86,7 +86,7 @@ function App() {
   // Set default token based on best WOM score with available tweets
   useEffect(() => {
     if (!searchedToken && tokens.length > 0 && tweets.length > 0) {
-      const topWomSorted = getTopTokensByWomScore(tokens, 5); // already memoized above
+      const topWomSorted = getTopTokensByWomScore(tokens, 5); 
       const topTokenWithTweets = topWomSorted.find((token) =>
         tweets.some(
           (t) =>
@@ -132,6 +132,9 @@ function App() {
 
   const handleTokenClick = useCallback(
     (token) => {
+      fetchIdRef.current++;
+      setIsFetchingTweets(false);
+      setIsAnalyzingSentiment(false);
       const clickedSymbol = token.token_symbol?.trim().toLowerCase();
       const relevantTweets = tweets.filter(
         (t) => t.token_symbol?.trim().toLowerCase() === clickedSymbol
@@ -196,12 +199,14 @@ function App() {
 
             <div ref={tokenInfoRef} className="max-w-3xl mx-auto px-4 mb-4">
               <TokenSearch
+                fetchIdRef={fetchIdRef}
                 tokens={tokens}
                 tweets={tweets}
                 setSearchedToken={setSearchedToken}
                 setFilteredTweets={setFilteredTweets}
                 setIsFetchingTweets={setIsFetchingTweets}
                 setIsAnalyzingSentiment={setIsAnalyzingSentiment}
+                setIsTokenInfoLoading={setIsTokenInfoLoading}
               />
             </div>
 
@@ -219,7 +224,7 @@ function App() {
                     />
                   </div>
                   <div className="lg:col-span-3">
-                    <TokenInfoCard token={searchedToken} />
+                    <TokenInfoCard token={searchedToken} isLoading={isTokenInfoLoading} />
                   </div>
                 </div>
               </div>
