@@ -127,55 +127,59 @@ const Leaderboard = React.memo(
     };
 
     return (
-      <div className="p-6 rounded-2xl bg-[#0A0F0A] border border-gray-800/60 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-green-500/30">
-        <div className="text-center text-2xl md:text-3xl font-semibold tracking-wider text-green-300 mb-6">
+      <div className="p-6 rounded-2xl bg-[#0A0F0A]/80 border border-[#1b1b1b] shadow-2xl backdrop-blur-md">
+        {/* Title */}
+        <h2 className="text-center text-3xl font-semibold text-green-300 mb-8">
           Leaderboard
-        </div>
-
-
+        </h2>
+    
         {/* Search + Filters */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            onPageChange(1);
-          }}
-          placeholder="Search token..."
-          className="px-3 py-2 bg-[#111] border border-gray-700 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-400 w-full md:w-64 text-sm transition"
-        />
-
-        <div className="flex gap-2">
-          {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => (
-            <button
-              key={val}
-              onClick={() => {
-                setCategoryFilter(val);
-                onPageChange(1);
-              }}
-              className={`px-3 py-1 rounded-md border text-sm transition-all duration-200 ${
-                categoryFilter === val
-                  ? "bg-[#1b1b1b] border-green-400 text-green-300"
-                  : "border-gray-700 text-gray-400 hover:border-green-300 hover:text-green-200"
-              }`}
-            >
-              {val}
-            </button>
-          ))}
-        </div>
-          <div className="flex gap-2">
-          {["6h", "24h", "1w", "All"].map((val) => (
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+          {/* Search */}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              onPageChange(1);
+            }}
+            placeholder="Search token..."
+            className="w-full md:w-64 text-sm px-4 py-2 rounded-full bg-[#111]/80 text-white border border-[#2a2a2a] focus:ring-2 focus:ring-green-400 focus:outline-none placeholder-gray-500 transition"
+          />
+    
+          {/* Launchpad Filter */}
+          <div className="flex flex-wrap gap-2">
+            {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => (
+              <button
+                key={val}
+                onClick={() => {
+                  setCategoryFilter(val);
+                  onPageChange(1);
+                }}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
+                  categoryFilter === val
+                    ? "bg-[#181818] border-green-400 text-green-300"
+                    : "border-[#2a2a2a] text-gray-400 hover:border-green-300 hover:text-green-200"
+                }`}
+              >
+                {val}
+              </button>
+            ))}
+          </div>
+    
+          {/* Age Filter */}
+          <div className="flex flex-wrap gap-2">
+            {["6h", "24h", "1w", "All"].map((val) => (
               <button
                 key={val}
                 onClick={() => {
                   setAgeFilter(val);
                   onPageChange(1);
                 }}
-                className={`px-3 py-1 border rounded-md text-sm transition-all ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
                   ageFilter === val
-                    ? "border-gray-500 text-white bg-[#1b1b1b]"
-                    : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+                    ? "bg-[#181818] border-gray-400 text-white"
+                    : "border-[#2a2a2a] text-gray-400 hover:border-gray-500 hover:text-white"
                 }`}
               >
                 {val}
@@ -183,15 +187,15 @@ const Leaderboard = React.memo(
             ))}
           </div>
         </div>
-
+    
         {/* Table */}
-        <div className="overflow-x-auto rounded-lg border border-green-800/40">
-          <table className="w-full text-left text-gray-300 text-sm border-collapse">
+        <div className="overflow-x-auto rounded-xl border border-[#1f1f1f]">
+          <table className="w-full text-sm text-gray-200">
             <thead>
-              <tr className="bg-[#06100A] text-green-300 text-xs tracking-wider uppercase border-b border-green-900/30">
-                <th className="p-3">Chain</th>
+              <tr className="bg-[#0f1b15]/80 text-green-300 uppercase text-xs tracking-widest border-b border-green-800/40">
+                <th className="px-4 py-3 text-left">Chain</th>
                 {[
-                  { key: "token_symbol", label: "Token Symbol" },
+                  { key: "token_symbol", label: "Token" },
                   { key: "wom_score", label: "WOM Score" },
                   { key: "market_cap_usd", label: "Market Cap" },
                   { key: "age", label: "Age" },
@@ -200,7 +204,7 @@ const Leaderboard = React.memo(
                 ].map(({ key, label }) => (
                   <th
                     key={key}
-                    className="p-3 cursor-pointer hover:text-green-400 transition-all duration-200"
+                    className="px-4 py-3 text-left cursor-pointer hover:text-green-400 transition"
                     onClick={() => handleSort(key)}
                   >
                     {label} {renderSortArrow(key)}
@@ -208,40 +212,37 @@ const Leaderboard = React.memo(
                 ))}
               </tr>
             </thead>
-
             <tbody>
               {pagedTokens.length > 0 ? (
                 pagedTokens.map((token) => (
                   <tr
                     key={token.token_symbol}
-                    onClick={() => token && onTokenClick(token)}
-                    className="border-b border-green-900/40 hover:bg-green-900/20 transition-all duration-200 cursor-pointer"
+                    onClick={() => onTokenClick(token)}
+                    className="group border-b border-[#1f1f1f] hover:bg-green-900/10 transition cursor-pointer"
                   >
-                    {/* Chain Logo */}
-                    <td className="p-3">
-                      <img src={solanaIcon} alt="Solana" className="w-6 h-6" />
+                    <td className="px-4 py-3">
+                      <img src={solanaIcon} alt="Solana" className="w-5 h-5" />
                     </td>
-
-                    {/* Token Symbol */}
-                    <td className="p-3 font-medium text-white whitespace-nowrap">
-                      <span className="inline-flex items-center gap-2">
+    
+                    <td className="px-4 py-3 whitespace-nowrap font-medium text-white">
+                      <div className="flex items-center gap-2">
                         {token.image_url && (
                           <img
                             src={token.image_url}
-                            alt={`${token.token_symbol} logo`}
-                            className="w-5 h-5 rounded-full object-cover border border-green-800"
+                            alt={token.token_symbol}
+                            className="w-5 h-5 rounded-full border border-green-800"
                           />
                         )}
-                        <span className="inline-flex items-center gap-1">
-                          {(token.token_symbol ?? "—").toUpperCase()}
+                        <span className="flex items-center gap-1">
+                          {token.token_symbol?.toUpperCase()}
                           {token.dex_url && (
                             <a
                               href={token.dex_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="hover:text-green-400"
+                              className="hover:text-green-300"
                             >
-                              <AiOutlineLineChart className="w-4 h-4 text-gray-400" />
+                              <AiOutlineLineChart className="w-4 h-4" />
                             </a>
                           )}
                           {token.launchpad && token.launchpad !== "unknown" && (
@@ -250,13 +251,12 @@ const Leaderboard = React.memo(
                             </span>
                           )}
                         </span>
-                      </span>
+                      </div>
                     </td>
-
-                    {/* WOM Score Bar + Value */}
-                    <td className="p-3">
+    
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-4 bg-gray-800 rounded-full border border-gray-600 overflow-hidden">
+                        <div className="relative w-16 h-2 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
                           <div
                             className={`h-full ${getBatteryColor(token.wom_score ?? 0)}`}
                             style={{ width: `${token.wom_score ?? 0}%` }}
@@ -267,25 +267,27 @@ const Leaderboard = React.memo(
                         </span>
                       </div>
                     </td>
-
-                    {/* Market Cap */}
-                    <td className="p-3 whitespace-nowrap">{safeFormatNumber(token.market_cap_usd)}</td>
-
-                    {/* Age Hours */}
-                    <td className="p-3 whitespace-nowrap">
-                      {token.age ? token.age : "—"}
+    
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {safeFormatNumber(token.market_cap_usd)}
                     </td>
-
-                    {/* Volume USD */}
-                    <td className="p-3 whitespace-nowrap">{safeFormatNumber(token.volume_usd)}</td>
-
-                    {/* Liquidity USD */}
-                    <td className="p-3 whitespace-nowrap">{safeFormatNumber(token.liquidity_usd)}</td>
+    
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {token.age ?? "—"}
+                    </td>
+    
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {safeFormatNumber(token.volume_usd)}
+                    </td>
+    
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {safeFormatNumber(token.liquidity_usd)}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-green-400">
+                  <td colSpan={8} className="text-center py-10 text-green-400">
                     No tokens match this filter.
                   </td>
                 </tr>
@@ -293,15 +295,15 @@ const Leaderboard = React.memo(
             </tbody>
           </table>
         </div>
-
+    
         {/* Pagination */}
-        <div className="flex justify-center items-center gap-4 mt-6">
+        <div className="flex justify-center items-center gap-6 mt-10">
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="px-3 py-1 border border-green-700 rounded-md text-green-400 hover:text-green-200 hover:border-green-400 transition disabled:opacity-30"
+            className="p-2 rounded-full border border-green-600 text-green-300 hover:text-green-100 hover:border-green-400 disabled:opacity-30 transition"
           >
-            <ChevronLeftIcon className="h-4 w-4" />
+            <ChevronLeftIcon className="w-5 h-5" />
           </button>
           <span className="text-green-300 font-mono text-sm">
             Page {currentPage} / {totalPages}
@@ -309,18 +311,19 @@ const Leaderboard = React.memo(
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="px-3 py-1 border border-green-700 rounded-md text-green-400 hover:text-green-200 hover:border-green-400 transition disabled:opacity-30"
+            className="p-2 rounded-full border border-green-600 text-green-300 hover:text-green-100 hover:border-green-400 disabled:opacity-30 transition"
           >
-            <ChevronRightIcon className="h-4 w-4" />
+            <ChevronRightIcon className="w-5 h-5" />
           </button>
         </div>
-
+    
         {/* Token Sentiment Chart */}
-        <div ref={TokenSentimentChartRef} className="mt-10">
+        <div ref={TokenSentimentChartRef} className="mt-12">
           <TokenSentimentChart tokens={tokens} tweets={tweets} />
         </div>
       </div>
-    );
+    );    
+    
   }
 );
 
