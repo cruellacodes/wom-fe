@@ -222,58 +222,69 @@ const TokenSearch = ({
 
   return (
     <div className="relative w-full z-50 font-mono group">
-      <div className="relative">
+      {/* Input Wrapper */}
+      <div className="relative shadow-md">
         <input
           type="text"
           placeholder="> search $token or address"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="terminal-placeholder w-full pl-12 pr-10 py-3 rounded-xl bg-black/30 border border-[#14f195]/30 focus:ring-2 focus:ring-[#14f195] backdrop-blur-md text-[#14f195] placeholder-[#14f195]/70 outline-none font-mono text-sm transition-all duration-200"
+          className="w-full pl-12 pr-12 py-3 rounded-full bg-[#0A0F0A]/80 border border-[#14f195]/20 text-sm text-[#14f195] placeholder-[#14f195]/50 focus:outline-none focus:ring-2 focus:ring-[#14f195] backdrop-blur-md transition-all duration-200"
         />
-        <Search size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#14f195] group-hover:animate-pulse" />
+  
+        {/* Search Icon */}
+        <Search
+          size={18}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#14f195]/80 group-hover:animate-pulse"
+        />
+  
+        {/* Clear (X) */}
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#9945FF] hover:text-red-500 transition text-lg font-bold"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#14f195]/70 hover:text-red-400 transition text-lg font-bold"
           >
             ×
           </button>
         )}
       </div>
-
+  
+      {/* Suggestions Dropdown */}
       {suggestions.length > 0 && (
-        <ul className="absolute w-full bg-black/80 border border-[#14f195]/20 rounded-xl mt-2 max-h-60 overflow-y-auto backdrop-blur-md text-[#14f195] z-50 shadow-lg">
+        <ul className="absolute w-full mt-2 max-h-64 overflow-y-auto bg-[#0A0F0A]/90 border border-[#14f195]/10 rounded-2xl shadow-lg backdrop-blur-md text-[#14f195] z-50">
           {suggestions.map((token, idx) => (
             <li
               key={token.address}
               ref={(el) => (suggestionRefs.current[idx] = el)}
               onClick={() => handleSearch(token.token_symbol)}
-              className={`cursor-pointer px-4 py-2 text-sm transition flex items-center gap-3 hover:bg-[#14f195]/10 ${
+              className={`cursor-pointer px-4 py-2 text-sm transition-all duration-150 flex items-center gap-3 hover:bg-[#14f195]/10 ${
                 selectedIndex === idx ? "bg-[#14f195]/20" : ""
               }`}
             >
               <img
                 src={token.image_url || solanaIcon}
                 alt={token.token_symbol}
-                className="w-5 h-5 rounded-sm object-cover border border-green-900"
+                className="w-5 h-5 rounded-full object-cover border border-green-800"
               />
-              <span>
-                {token.token_symbol}{" "}
-                <span className="text-xs text-[#9945FF]">({token.token_name})</span>
+              <span className="truncate">
+                {token.token_symbol}
+                <span className="text-xs text-[#9945FF] ml-2">({token.token_name})</span>
               </span>
             </li>
           ))}
         </ul>
       )}
-
+  
+      {/* Fallback Prompt */}
       {waitingForAddress && (
-        <p className="text-xs text-[#FBBF24] mt-2 font-mono">
-          Couldn&apos;t find <span className="font-bold">${lastSymbolAttempt}</span>. Please paste its token address.
+        <p className="text-xs text-yellow-400 mt-2 font-mono">
+          Couldn&apos;t find <span className="font-bold">${lastSymbolAttempt}</span>. Try pasting its token address.
         </p>
       )}
     </div>
   );
+  
 };
 
 export default TokenSearch;
