@@ -197,6 +197,35 @@ const Leaderboard = React.memo(
                 {[
                   { key: "token_symbol", label: "Token" },
                   { key: "wom_score", label: "WOM Score" },
+                  {
+                    key: "avg_followers_count",
+                    label: (
+                      <div className="inline-flex items-center gap-1 text-xs whitespace-nowrap uppercase">
+                        <span>Whispers</span>
+                        <div className="relative group flex items-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-[13px] h-[13px] text-gray-400 hover:text-green-300 transition"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
+                            />
+                          </svg>
+                          <div className="absolute left-full top-full mt-2 ml-2 z-50 w-[220px] px-3 py-2 text-[12px] text-gray-200 bg-[#0a0a0a] border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none leading-snug text-left normal-case whitespace-normal">
+                            <p className="text-gray-100 font-medium mb-1">Whispers score</p>
+                            <p>Measures how small the average tweeting account is.</p>
+                            <p className="text-gray-400">Lower = earlier whispers.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  },    
                   { key: "market_cap_usd", label: "Market Cap" },
                   { key: "age", label: "Age" },
                   { key: "volume_usd", label: "Volume" },
@@ -266,6 +295,12 @@ const Leaderboard = React.memo(
                           {token.wom_score != null ? `${token.wom_score}%` : "—"}
                         </span>
                       </div>
+                    </td>
+
+                    <td className="px-4 py-3 whitespace-nowrap text-white text-sm">
+                      {typeof token.avg_followers_count === "number"
+                        ? safeFormatNumber(token.avg_followers_count)
+                        : "—"}
                     </td>
     
                     <td className="px-4 py-3 whitespace-nowrap">
