@@ -32,48 +32,53 @@ const Header = () => {
 
   return (
     <header className="w-full px-6 md:px-10 py-4 bg-black text-white z-50 relative">
-      <div className="flex items-center justify-between">
-        {/* Logo */}
-        <div
-          onClick={() => navigate("/")}
-          className="flex items-center cursor-pointer hover:opacity-90 transition"
-        >
-          <img src={Logo} alt="Logo" className="w-20 md:w-24 h-20 md:h-24 object-contain" />
-        </div>
-
-        {/* LIVE Badge */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 md:static md:translate-x-0">
-          <div className="flex items-center gap-2 px-3 py-1 bg-[#121212] border border-[#333] rounded-full shadow-sm backdrop-blur-md">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF00] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00FF00]"></span>
-            </span>
-            <span className="text-xs font-mono text-[#00FF00] tracking-widest">LIVE</span>
+      <div className="flex items-center justify-between w-full">
+        {/* Left - Logo + Nav + LIVE */}
+        <div className="flex items-center gap-6 flex-shrink-0">
+          <div
+            onClick={() => navigate("/")}
+            className="flex items-center cursor-pointer hover:opacity-90 transition"
+          >
+            <img
+              src={Logo}
+              alt="Logo"
+              className="w-20 md:w-24 h-20 md:h-24 object-contain"
+            />
+          </div>
+          <div className="hidden md:flex items-center gap-4">
+            {navItems.map(({ icon, label, action }) => (
+              <button
+                key={label}
+                onClick={action}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition rounded-md"
+              >
+                {icon}
+                {label}
+              </button>
+            ))}
+            {/* LIVE - Mini inline status */}
+            <div className="flex items-center gap-1 text-[10px] font-mono text-[#00FF00] pl-1">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF00] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00FF00]"></span>
+              </span>
+              <span>LIVE</span>
+            </div>
           </div>
         </div>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-6">
-          {navItems.map(({ icon, label, action }) => (
-            <button
-              key={label}
-              onClick={action}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition rounded-md"
-            >
-              {icon}
-              {label}
-            </button>
-          ))}
+        {/* Right - EXEC Buttons */}
+        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
           <button
             onClick={() => navigate("/twitterscan")}
-            className="px-4 py-2 font-mono tracking-widest text-sm text-[#00FF00] bg-[#002b00] hover:bg-[#004400] rounded-md transition"
+            className="px-2.5 py-1.5 font-mono tracking-widest text-xs text-[#00FF00] bg-[#002b00] hover:bg-[#004400] rounded-md transition"
           >
             &gt;_ EXEC TWITTERSCAN
           </button>
           <div className="relative">
             <button
               onClick={() => navigate("/shillerscan")}
-              className="px-4 py-2 font-mono tracking-widest text-sm text-cyan-400 bg-[#001f2e] hover:bg-[#003f5c] rounded-md transition"
+              className="px-2.5 py-1.5 font-mono tracking-widest text-xs text-cyan-400 bg-[#001f2e] hover:bg-[#003f5c] rounded-md transition"
             >
               &gt;_ EXEC SHILLERSCAN
             </button>
@@ -84,7 +89,7 @@ const Header = () => {
           <div className="relative">
             <button
               onClick={() => navigate("/stocksanalyzer")}
-              className="px-4 py-2 font-mono tracking-widest text-sm text-pink-400 bg-[#2a003f] hover:bg-[#440066] rounded-md transition"
+              className="px-2.5 py-1.5 font-mono tracking-widest text-xs text-pink-400 bg-[#2a003f] hover:bg-[#440066] rounded-md transition"
             >
               &gt;_ EXEC STOCKSANALYZER
             </button>

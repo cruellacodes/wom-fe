@@ -22,6 +22,7 @@ import About from "./components/About";
 import TwitterScan from "./components/TwitterScan";
 import AppLoader from "./components/Loader";
 import ShillerScan from "./components/ShillerScan"
+import StocksAnalyzer from "./components/StocksAnalyzer.jsx"
 
 import { useActiveTokens } from "./hooks/useActiveTokens";
 import { useTokenTweets } from "./hooks/useTokenTweets";
@@ -263,6 +264,7 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/twitterscan" element={<TwitterScan />} />
       <Route path="/shillerscan" element={<ShillerScan />} />
+      <Route path="/stocksanalyzer" element={<StocksAnalyzer />} />
     </Routes>
   );
 }

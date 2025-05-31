@@ -50,10 +50,10 @@ const Leaderboard = React.memo(
     }, [sortBy]);
 
     const getBatteryColor = (score) => {
-      if (score >= 49) return "bg-green-500";
-      if (score >= 25) return "bg-yellow-400";
-      return "bg-red-500";
-    };
+      if (score >= 49) return "bg-green-500 shadow-green-500/40";
+      if (score >= 25) return "bg-yellow-400 shadow-yellow-400/40";
+      return "bg-red-500 shadow-red-500/40";
+    };    
 
     const safeFormatNumber = (num) => {
       if (typeof num !== "number" || isNaN(num)) return "—";
@@ -127,41 +127,43 @@ const Leaderboard = React.memo(
     };
 
     return (
-      <div className="p-6 rounded-xl text-green-300 bg-[#0A0F0A] border border-green-800/40 backdrop-blur-lg bg-opacity-90 transition-all duration-300">
-        <div className="text-center text-xl md:text-2xl font-semibold tracking-wide mb-6">
+      <div className="p-6 rounded-2xl bg-[#0A0F0A] border border-gray-800/60 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-green-500/30">
+        <div className="text-center text-2xl md:text-3xl font-semibold tracking-wider text-green-300 mb-6">
           Leaderboard
         </div>
 
+
         {/* Search + Filters */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              onPageChange(1);
-            }}
-            placeholder="Search token..."
-            className="px-3 py-2 bg-[#111] border border-gray-700 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-600 w-full md:w-64 text-sm"
-          />
-          <div className="flex gap-2">
-            {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => (
-              <button
-                key={val}
-                onClick={() => {
-                  setCategoryFilter(val);
-                  onPageChange(1);
-                }}
-                className={`px-3 py-1 border rounded-md text-sm transition-all ${
-                  categoryFilter === val
-                    ? "border-gray-500 text-white bg-[#1b1b1b]"
-                    : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
-                }`}
-              >
-                {val}
-              </button>
-            ))}
-          </div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            onPageChange(1);
+          }}
+          placeholder="Search token..."
+          className="px-3 py-2 bg-[#111] border border-gray-700 rounded-md text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-400 w-full md:w-64 text-sm transition"
+        />
+
+        <div className="flex gap-2">
+          {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => (
+            <button
+              key={val}
+              onClick={() => {
+                setCategoryFilter(val);
+                onPageChange(1);
+              }}
+              className={`px-3 py-1 rounded-md border text-sm transition-all duration-200 ${
+                categoryFilter === val
+                  ? "bg-[#1b1b1b] border-green-400 text-green-300"
+                  : "border-gray-700 text-gray-400 hover:border-green-300 hover:text-green-200"
+              }`}
+            >
+              {val}
+            </button>
+          ))}
+        </div>
           <div className="flex gap-2">
           {["6h", "24h", "1w", "All"].map((val) => (
               <button
@@ -186,26 +188,27 @@ const Leaderboard = React.memo(
         <div className="overflow-x-auto rounded-lg border border-green-800/40">
           <table className="w-full text-left text-gray-300 text-sm border-collapse">
             <thead>
-              <tr className="bg-[#06100A] text-green-300 text-xs tracking-wide uppercase">
+              <tr className="bg-[#06100A] text-green-300 text-xs tracking-wider uppercase border-b border-green-900/30">
                 <th className="p-3">Chain</th>
                 {[
-                  "token_symbol",
-                  "wom_score",
-                  "market_cap_usd",
-                  "age",
-                  "volume_usd",
-                  "liquidity_usd",
-                ].map((key) => (
+                  { key: "token_symbol", label: "Token Symbol" },
+                  { key: "wom_score", label: "WOM Score" },
+                  { key: "market_cap_usd", label: "Market Cap" },
+                  { key: "age", label: "Age" },
+                  { key: "volume_usd", label: "Volume" },
+                  { key: "liquidity_usd", label: "Liquidity" },
+                ].map(({ key, label }) => (
                   <th
                     key={key}
-                    className="p-3 cursor-pointer hover:text-green-400"
+                    className="p-3 cursor-pointer hover:text-green-400 transition-all duration-200"
                     onClick={() => handleSort(key)}
                   >
-                    {key.replace("_", " ").toUpperCase()} {renderSortArrow(key)}
+                    {label} {renderSortArrow(key)}
                   </th>
                 ))}
               </tr>
             </thead>
+
             <tbody>
               {pagedTokens.length > 0 ? (
                 pagedTokens.map((token) => (

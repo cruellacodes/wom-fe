@@ -252,7 +252,7 @@ const TwitterScan = () => {
           Realtime tweet tracking for Solana tokens.
         </p>
       </div>
-
+  
       <div className="flex justify-center mb-12 px-4">
         <div className="relative w-full max-w-md">
           <input
@@ -287,7 +287,7 @@ const TwitterScan = () => {
                   onClick={() => handleSelectToken(token.token_symbol)}
                   className={`px-4 py-2 text-sm flex justify-between font-mono cursor-pointer ${
                     i === highlightedIndex
-                      ? "bg-[#333] text-[#FF4DFF]" 
+                      ? "bg-[#333] text-[#FF4DFF]"
                       : "hover:bg-[#2C2C2C]"
                   }`}
                 >
@@ -299,33 +299,13 @@ const TwitterScan = () => {
           )}
         </div>
       </div>
-
+  
       <div className="px-6 max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
         {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-[#13131A] border border-[#2A2A2A] p-5 rounded-xl animate-pulse h-60 flex flex-col justify-between space-y-4"
-            >
-              <div className="flex justify-between items-center">
-                <div className="h-4 w-24 bg-[#2A2A2A] rounded" />
-                <div className="flex gap-2">
-                  <div className="h-4 w-4 bg-[#2A2A2A] rounded" />
-                  <div className="h-4 w-4 bg-[#2A2A2A] rounded" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                {["1h", "3h", "6h", "12h", "24h", "48h"].map((label) => (
-                  <div key={label} className="flex justify-between">
-                    <div className="h-3 w-10 bg-[#2A2A2A] rounded" />
-                    <div className="h-3 w-6 bg-[#2A2A2A] rounded" />
-                  </div>
-                ))}
-              </div>
-              <div className="h-12 bg-[#2A2A2A] rounded mt-2" />
-            </div>
-          ))
-        ) :watchlist.length === 0 ? (
+          <div className="col-span-full text-center text-[#999] italic animate-pulse">
+            Fetching trending tokens...
+          </div>
+        ) : watchlist.length === 0 ? (
           <div className="col-span-full text-center text-[#777] italic mt-8">
             Your watchlist is empty. Search for a token above to get started.
           </div>
@@ -356,11 +336,12 @@ const TwitterScan = () => {
                     </button>
                   </div>
                   <div className="text-xs text-[#FF4DFF] mt-1">
-                    {total.toLocaleString()} <span className="text-[#AAA]">tweets</span>
+                    {total.toLocaleString()}{" "}
+                    <span className="text-[#AAA]">tweets</span>
                   </div>
                 </div>
               </div>
-
+  
               <ul className="text-sm text-[#AAA] space-y-1 mb-4">
                 {Object.entries(intervals).map(([label, value]) => (
                   <li key={label} className="flex justify-between">
@@ -369,7 +350,7 @@ const TwitterScan = () => {
                   </li>
                 ))}
               </ul>
-
+  
               <Bar
                 data={{
                   labels: ["1h", "3h", "6h", "12h", "24h", "48h"],
@@ -387,8 +368,14 @@ const TwitterScan = () => {
                   responsive: true,
                   animation: { duration: 800, easing: "easeOutQuart" },
                   scales: {
-                    x: { ticks: { color: "#EAEAEA" }, grid: { color: "#222" } },
-                    y: { ticks: { color: "#EAEAEA" }, grid: { color: "#222" } },
+                    x: {
+                      ticks: { color: "#EAEAEA" },
+                      grid: { color: "#222" },
+                    },
+                    y: {
+                      ticks: { color: "#EAEAEA" },
+                      grid: { color: "#222" },
+                    },
                   },
                 }}
                 height={180}
@@ -397,10 +384,11 @@ const TwitterScan = () => {
           ))
         )}
       </div>
-
+  
       <Footer />
     </div>
   );
+  
 };
 
 export default TwitterScan;
