@@ -30,8 +30,8 @@ const Leaderboard = React.memo(
     const formatLaunchpadLabel = (value) => {
       const map = {
         pumpfun: "pump.fun",
-        bonk: "BONK",
-        boop: "BOOP",
+        bonk: "bonk",
+        boop: "boop",
       };
       return map[value.toLowerCase()] || value;
     };
@@ -149,22 +149,40 @@ const Leaderboard = React.memo(
     
           {/* Launchpad Filter */}
           <div className="flex flex-wrap gap-2">
-            {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => (
-              <button
-                key={val}
-                onClick={() => {
-                  setCategoryFilter(val);
-                  onPageChange(1);
-                }}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
-                  categoryFilter === val
-                    ? "bg-[#181818] border-green-400 text-green-300"
-                    : "border-[#2a2a2a] text-gray-400 hover:border-green-300 hover:text-green-200"
-                }`}
-              >
-                {val}
-              </button>
-            ))}
+            {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => {
+              const isActive = categoryFilter === val;
+
+              const baseStyles = "px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150";
+
+              const categoryStyles = {
+                Trending: isActive
+                  ? "bg-[#181818] border-green-400 text-green-300"
+                  : "border-[#2a2a2a] text-gray-400 hover:border-green-300 hover:text-green-200",
+                Pumpfun: isActive
+                  ? "bg-[#90fcb3] text-[#0f1f17] border-none"
+                  : "border-[#2a2a2a] text-gray-400 hover:border-green-300 hover:text-green-200",
+                Bonk: isActive
+                  ? "bg-[#f7f700] text-black border-none"
+                  : "border-[#2a2a2a] text-gray-400 hover:border-yellow-300 hover:text-yellow-100",
+                Boop: isActive
+                  ? "bg-[#90caff] text-[#0a0f1a] border-none"
+                  : "border-[#2a2a2a] text-gray-400 hover:border-blue-300 hover:text-blue-100",
+              };
+
+              return (
+                <button
+                  key={val}
+                  onClick={() => {
+                    setCategoryFilter(val);
+                    onPageChange(1);
+                  }}
+                  className={`${baseStyles} ${categoryStyles[val]}`}
+                >
+                  {val}
+                </button>
+              );
+            })}
+
           </div>
     
           {/* Age Filter */}
@@ -275,7 +293,17 @@ const Leaderboard = React.memo(
                             </a>
                           )}
                           {token.launchpad && token.launchpad !== "unknown" && (
-                            <span className="ml-2 text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded-full">
+                            <span
+                              className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                                token.launchpad.toLowerCase() === "pumpfun"
+                                  ? "bg-[#90fcb3] text-[#0f1f17]"
+                                  : token.launchpad.toLowerCase() === "bonk"
+                                  ? "bg-[#f7f700] text-black"
+                                  : token.launchpad.toLowerCase() === "boop"
+                                  ? "bg-[#90caff] text-[#0a0f1a]"
+                                  : "bg-purple-900 text-purple-300"
+                              }`}
+                            >
                               {formatLaunchpadLabel(token.launchpad)}
                             </span>
                           )}
