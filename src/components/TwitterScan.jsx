@@ -64,20 +64,19 @@ const TwitterScan = () => {
     fetchTokens();
   }, []);
 
-  
   useEffect(() => {
     let mounted = true;
-  
+
     const preloadTrending = async () => {
       const stored = localStorage.getItem(WATCHLIST_KEY);
       if (!mounted || (stored && JSON.parse(stored)?.length > 0)) return;
-  
+
       setLoading(true);
       try {
-        const trendingTokens = await fetchTopActiveTokensByTweetCount(24, 3);
+        const trendingTokens = await fetchTopActiveTokensByTweetCount(24, 1);
         for (const token of trendingTokens) {
           if (!mounted) return;
-          await handleSelectToken(token);
+          await handleSelectToken(token, true);
         }
       } catch (err) {
         console.error("Failed to preload trending tokens", err);
@@ -85,15 +84,13 @@ const TwitterScan = () => {
         if (mounted) setLoading(false);
       }
     };
-  
+
     preloadTrending();
-  
+
     return () => {
       mounted = false;
     };
   }, []);
-  
-    
 
   const groupIntoBuckets = (tweets) => {
     const now = Date.now();
@@ -105,10 +102,10 @@ const TwitterScan = () => {
       "24h": 0,
       "48h": 0,
     };
-  
+
     tweets.forEach((tweet) => {
       const ageH = (now - new Date(tweet.created_at).getTime()) / 36e5;
-  
+
       if (ageH <= 1) buckets["1h"]++;
       else if (ageH <= 3) buckets["3h"]++;
       else if (ageH <= 6) buckets["6h"]++;
@@ -116,53 +113,50 @@ const TwitterScan = () => {
       else if (ageH <= 24) buckets["24h"]++;
       else if (ageH <= 48) buckets["48h"]++;
     });
-  
+
     return buckets;
   };
 
-  const handleSelectToken = async (token_symbol) => {
+  const handleSelectToken = async (token_symbol, fromTrending = false) => {
     const raw = token_symbol;
     const symbol = raw.toUpperCase();
     const normalized = symbol.toLowerCase();
     if (watchlist.some((t) => t.token === symbol)) return;
-  
+
     const { data: tokenData } = await supabase
       .from("tokens")
       .select("is_active")
       .eq("token_symbol", normalized)
       .maybeSingle();
-  
+
     if (!tokenData?.is_active) return;
-  
+
     try {
       let tweets = [];
-  
-      // Step 1: Try fetching tweets from Supabase
+
       const { data: supabaseTweets } = await supabase
         .from("tweets")
         .select("created_at")
         .eq("token_symbol", normalized)
         .gte("created_at", new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString());
-  
+
       if (supabaseTweets?.length > 0) {
         tweets = supabaseTweets;
       } else {
-        // Step 2: Fallback to backend endpoint
         const fallbackRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/tweets/${normalized}`
         );
         const fallbackData = await fallbackRes.json();
         tweets = fallbackData?.tweets || [];
       }
-  
-      // Step 3: Bucket tweets
+
       if (tweets.length === 0) {
         alert("No tweet data found for this token.");
         return;
       }
-  
+
       const buckets = groupIntoBuckets(tweets);
-  
+
       setWatchlist((prev) => [
         ...prev,
         {
@@ -170,15 +164,16 @@ const TwitterScan = () => {
           total: Object.values(buckets).reduce((a, b) => a + b, 0),
           intervals: buckets,
           history: ["1h", "3h", "6h", "12h", "24h", "48h"].map((k) => buckets[k]),
+          preloaded: fromTrending,
         },
       ]);
     } catch (err) {
       console.error("Token selection failed:", err);
     }
-  
+
     setSearchInput("");
     setFilteredOptions(tokenOptions);
-  };  
+  };
 
   const handleSearchInput = (e) => {
     const val = e.target.value;
@@ -188,9 +183,8 @@ const TwitterScan = () => {
         t.token_symbol.toLowerCase().includes(val.toLowerCase())
       )
     );
-    setHighlightedIndex(-1); 
+    setHighlightedIndex(-1);
   };
-  
 
   const handleRemoveToken = (symbol) => {
     setWatchlist((prev) => prev.filter((t) => t.token !== symbol));
@@ -252,7 +246,7 @@ const TwitterScan = () => {
           Realtime tweet tracking for Solana tokens.
         </p>
       </div>
-  
+
       <div className="flex justify-center mb-12 px-4">
         <div className="relative w-full max-w-md">
           <input
@@ -299,7 +293,7 @@ const TwitterScan = () => {
           )}
         </div>
       </div>
-  
+
       <div className="px-6 max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
         {loading ? (
           <div className="col-span-full text-center text-[#999] italic animate-pulse">
@@ -310,85 +304,92 @@ const TwitterScan = () => {
             Your watchlist is empty. Search for a token above to get started.
           </div>
         ) : (
-          watchlist.map(({ token, total, intervals, history }, index) => (
-            <div
-              key={index}
-              ref={(el) => (cardRefs.current[token] = el)}
-              className="relative bg-[#13131A] border border-[#2A2A2A] p-5 rounded-xl transition-all hover:shadow-[0_0_15px_#FF4DFF40]"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <h2 className="text-base font-normal">{token}</h2>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleShare(token)}
-                      title="Download card"
-                      className="text-[#888] hover:text-white transition-all"
-                    >
-                      <ArrowDownTrayIcon className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleRemoveToken(token)}
-                      title="Remove"
-                      className="text-[#888] hover:text-red-500 transition-all"
-                    >
-                      <XMarkIcon className="w-4 h-4" />
-                    </button>
+          watchlist.map(({ token, total, intervals, history, preloaded }, index) => (
+            <div key={index} className="relative">
+                {preloaded && (
+                  <div className="absolute -top-4 left-1 z-10">
+                    <span className="text-xs bg-[#1A1A1A] px-3 py-1 rounded-full border border-[#FF4DFF] text-[#FF4DFF] w-fit">
+                      🔥 Trending — Top 24h Volume
+                    </span>
                   </div>
-                  <div className="text-xs text-[#FF4DFF] mt-1">
-                    {total.toLocaleString()}{" "}
-                    <span className="text-[#AAA]">tweets</span>
+                )}
+                <div
+                  ref={(el) => (cardRefs.current[token] = el)}
+                  className="relative bg-[#13131A] border border-[#2A2A2A] p-5 rounded-xl transition-all hover:shadow-[0_0_15px_#FF4DFF40]"
+                >
+
+                <div className="flex justify-between items-start mb-2">
+                  <h2 className="text-base font-normal">{token}</h2>
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleShare(token)}
+                        title="Download card"
+                        className="text-[#888] hover:text-white transition-all"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveToken(token)}
+                        title="Remove"
+                        className="text-[#888] hover:text-red-500 transition-all"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-xs text-[#FF4DFF] mt-1">
+                      {total.toLocaleString()} <span className="text-[#AAA]">tweets</span>
+                    </div>
                   </div>
                 </div>
+
+                <ul className="text-sm text-[#AAA] space-y-1 mb-4">
+                  {Object.entries(intervals).map(([label, value]) => (
+                    <li key={label} className="flex justify-between">
+                      <span>{label}</span>
+                      <span>{value.toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Bar
+                  data={{
+                    labels: ["1h", "3h", "6h", "12h", "24h", "48h"],
+                    datasets: [
+                      {
+                        label: "Tweet Volume",
+                        data: history,
+                        backgroundColor: "rgba(255, 77, 255, 0.5)",
+                        borderRadius: 6,
+                      },
+                    ],
+                  }}
+                  options={{
+                    plugins: { legend: { display: false } },
+                    responsive: true,
+                    animation: { duration: 800, easing: "easeOutQuart" },
+                    scales: {
+                      x: {
+                        ticks: { color: "#EAEAEA" },
+                        grid: { color: "#222" },
+                      },
+                      y: {
+                        ticks: { color: "#EAEAEA" },
+                        grid: { color: "#222" },
+                      },
+                    },
+                  }}
+                  height={180}
+                />
               </div>
-  
-              <ul className="text-sm text-[#AAA] space-y-1 mb-4">
-                {Object.entries(intervals).map(([label, value]) => (
-                  <li key={label} className="flex justify-between">
-                    <span>{label}</span>
-                    <span>{value.toLocaleString()}</span>
-                  </li>
-                ))}
-              </ul>
-  
-              <Bar
-                data={{
-                  labels: ["1h", "3h", "6h", "12h", "24h", "48h"],
-                  datasets: [
-                    {
-                      label: "Tweet Volume",
-                      data: history,
-                      backgroundColor: "rgba(255, 77, 255, 0.5)",
-                      borderRadius: 6,
-                    },
-                  ],
-                }}
-                options={{
-                  plugins: { legend: { display: false } },
-                  responsive: true,
-                  animation: { duration: 800, easing: "easeOutQuart" },
-                  scales: {
-                    x: {
-                      ticks: { color: "#EAEAEA" },
-                      grid: { color: "#222" },
-                    },
-                    y: {
-                      ticks: { color: "#EAEAEA" },
-                      grid: { color: "#222" },
-                    },
-                  },
-                }}
-                height={180}
-              />
             </div>
           ))
         )}
       </div>
-  
+
       <Footer />
     </div>
   );
-  
 };
 
 export default TwitterScan;
