@@ -44,5 +44,10 @@ export default {
       },
     },
   },
+
+  experimental: {
+    disableColorPalette: true,
+  },
+
   plugins: [],
 };
