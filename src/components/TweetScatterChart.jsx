@@ -13,13 +13,16 @@ const TweetScatterChart = ({ searchedToken, tweets, isFetchingTweets, isAnalyzin
   const [showSentimentLoader, setShowSentimentLoader] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(0); // 0: 24h, 1: 6h, 2: 1h
 
-  const now = Date.now();
+  const now = useMemo(() => Date.now(), []);
 
-  const zoomLevels = [
-    { label: "24h", range: [now - 24 * 60 * 60 * 1000, now] },
-    { label: "6h", range: [now - 6 * 60 * 60 * 1000, now] },
-    { label: "1h", range: [now - 1 * 60 * 60 * 1000, now] },
-  ];
+  const zoomLevels = useMemo(
+    () => [
+      { label: "24h", range: [now - 24 * 60 * 60 * 1000, now] },
+      { label: "6h", range: [now - 6 * 60 * 60 * 1000, now] },
+      { label: "1h", range: [now - 1 * 60 * 60 * 1000, now] },
+    ],
+    [now]
+  );
 
   const timeDomain = zoomLevels[zoomLevel].range;
 
