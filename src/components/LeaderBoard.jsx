@@ -32,6 +32,7 @@ const Leaderboard = React.memo(
         pumpfun: "pump.fun",
         bonk: "bonk",
         boop: "boop",
+        believe: "believe",
       };
       return map[value.toLowerCase()] || value;
     };
@@ -149,7 +150,7 @@ const Leaderboard = React.memo(
     
           {/* Launchpad Filter */}
           <div className="flex flex-wrap gap-2">
-            {["Trending", "Pumpfun", "Bonk", "Boop"].map((val) => {
+            {["Trending", "Pumpfun", "Bonk", "Boop", "Believe"].map((val) => {
               const isActive = categoryFilter === val;
 
               const baseStyles = "px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150";
@@ -167,6 +168,9 @@ const Leaderboard = React.memo(
                 Boop: isActive
                   ? "bg-[#90caff] text-[#0a0f1a] border-none"
                   : "border-[#2a2a2a] text-gray-400 hover:border-blue-300 hover:text-blue-100",
+                Believe: isActive
+                  ? "bg-[#00FF00] text-black border-none"
+                  : "border-[#2a2a2a] text-gray-400 hover:border-green-300 hover:text-green-200",                
               };
 
               return (
@@ -301,11 +305,14 @@ const Leaderboard = React.memo(
                                   ? "bg-[#f7f700] text-black"
                                   : token.launchpad.toLowerCase() === "boop"
                                   ? "bg-[#90caff] text-[#0a0f1a]"
+                                  : token.launchpad.toLowerCase() === "believe"
+                                  ? "bg-[#00FF00] text-black"
                                   : "bg-purple-900 text-purple-300"
                               }`}
                             >
                               {formatLaunchpadLabel(token.launchpad)}
                             </span>
+                            
                           )}
                         </span>
                       </div>
