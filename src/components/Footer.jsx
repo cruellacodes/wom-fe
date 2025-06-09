@@ -4,6 +4,7 @@ import { FaGithub } from "react-icons/fa";
 import { SiX } from "react-icons/si";
 import { ArrowUpIcon } from "@heroicons/react/24/solid";
 import Logo from "../assets/logo.png";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const scrollToTop = () => {
@@ -29,19 +30,25 @@ const Footer = () => {
           <ul className="flex flex-wrap gap-6 text-sm">
             {[
               { label: "Docs", path: "https://github.com/cruellacodes/wom/blob/main/README.md" },
-              { label: "Premium", path: "/premium" },
+              // { label: "Premium", path: "/premiuminfo" },
               { label: "WOM Score", path: "https://github.com/cruellacodes/wom/blob/main/wom/sentimentEngine.md" },
               { label: "Contact", path: "/contact" },
             ].map(({ label, path }, i) => (
               <li key={i}>
-                <a
-                  href={path}
-                  target={path.startsWith("http") ? "_blank" : "_self"}
-                  rel="noopener noreferrer"
-                  className="text-white/70 hover:text-white transition"
-                >
-                  {label}
-                </a>
+                {path.startsWith("http") ? (
+                  <a
+                    href={path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/70 hover:text-white transition"
+                  >
+                    {label}
+                  </a>
+                ) : (
+                  <Link to={path} className="text-white/70 hover:text-white transition">
+                    {label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
@@ -50,7 +57,7 @@ const Footer = () => {
             <div className="flex gap-4">
               {[
                 { icon: <SiX className="w-5 h-5" />, link: "https://x.com/womdotfun" },
-                // { icon: <FaTelegramPlane className="w-5 h-5" />, link: "https://t.me/YOUR_HANDLE" },
+                // { icon: <FaTelegramPlane className="w-5 h-5" />, link: "https://t.me/" },
                 { icon: <FaGithub className="w-5 h-5" />, link: "https://github.com/cruellacodes" },
               ].map(({ icon, link }, idx) => (
                 <a
