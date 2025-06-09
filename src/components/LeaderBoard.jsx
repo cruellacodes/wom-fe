@@ -213,9 +213,10 @@ const Leaderboard = React.memo(
         {/* Table */}
         <div className="overflow-x-auto rounded-xl border border-[#1f1f1f]">
           <table className="w-full text-sm text-gray-200">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-[#0f1b15]/80 text-green-300 uppercase text-xs tracking-widest border-b border-green-800/40">
                 <th className="px-4 py-3 text-left">Chain</th>
+                <th className="px-1 py-3 w-8"></th> {/* Empty header for lightning column */}
                 {[
                   { key: "token_symbol", label: "Token" },
                   { key: "wom_score", label: "WOM Score" },
@@ -269,24 +270,36 @@ const Leaderboard = React.memo(
                   <tr
                     key={token.token_symbol}
                     onClick={() => onTokenClick(token)}
-                    className="group border-b border-[#1f1f1f] hover:bg-green-900/10 transition cursor-pointer"
+                    className="border-b border-[#1f1f1f] hover:bg-green-900/10 transition cursor-pointer"
                   >
                     <td className="px-4 py-3">
                       <img src={solanaIcon} alt="Solana" className="w-5 h-5" />
                     </td>
-    
+
+                    {/* Lightning column - separate from Token column */}
+                    <td className="px-1 py-3 w-8">
+                      {token.first_spotted_by && (
+                        <div className="relative group flex justify-center">
+                          <span 
+                            className="animate-pulse bg-yellow-400/10 text-yellow-300 text-[8px] font-bold px-1 py-0.5 rounded-sm uppercase cursor-pointer hover:bg-yellow-400/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(`https://x.com/${token.first_spotted_by}`, '_blank');
+                            }}
+                          >
+                            ⚡
+                          </span>
+                          <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max min-w-[180px] max-w-[220px] px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
+                            <div className="whitespace-nowrap">First spotted by @{token.first_spotted_by}</div>
+                            <div className="text-gray-400 whitespace-nowrap">Click to view profile</div>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-white">
                       <div className="flex items-center gap-2">
-                        {token.first_spotted_by && (
-                          <div className="relative group">
-                            <span className="animate-pulse bg-yellow-400/10 border border-yellow-400 text-yellow-300 text-[10px] font-bold px-1.5 py-0.5 rounded-sm uppercase">
-                              ⚡
-                            </span>
-                            <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max max-w-[200px] px-2 py-1 text-xs text-white bg-black border border-gray-700 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
-                              First spotted by @{token.first_spotted_by}
-                            </div>
-                          </div>
-                        )}
+                        {/* Token image */}
                         {token.image_url && (
                           <img
                             src={token.image_url}
@@ -294,6 +307,8 @@ const Leaderboard = React.memo(
                             className="w-5 h-5 rounded-full border border-green-800"
                           />
                         )}
+
+                        {/* Token symbol and other elements */}
                         <span className="flex items-center gap-1">
                           {token.token_symbol?.toUpperCase()}
                           {token.dex_url && (
@@ -302,6 +317,7 @@ const Leaderboard = React.memo(
                               target="_blank"
                               rel="noopener noreferrer"
                               className="hover:text-green-300"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <AiOutlineLineChart className="w-4 h-4" />
                             </a>
@@ -322,7 +338,6 @@ const Leaderboard = React.memo(
                             >
                               {formatLaunchpadLabel(token.launchpad)}
                             </span>
-                            
                           )}
                         </span>
                       </div>
@@ -367,7 +382,7 @@ const Leaderboard = React.memo(
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-green-400">
+                  <td colSpan={9} className="text-center py-10 text-green-400">
                     No tokens match this filter.
                   </td>
                 </tr>
