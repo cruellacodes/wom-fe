@@ -117,6 +117,34 @@ const TwitterScan = () => {
     return buckets;
   };
 
+  // Helper function to convert hourly buckets to interval buckets
+  const convertVolumeBucketsToIntervals = (hourlyBuckets) => {
+    const now = Date.now();
+    const buckets = {
+      "1h": 0,
+      "3h": 0,
+      "6h": 0,
+      "12h": 0,
+      "24h": 0,
+      "48h": 0,
+    };
+
+    // Convert hourly buckets (ISO timestamp keys) to interval buckets
+    Object.entries(hourlyBuckets).forEach(([hourTimestamp, count]) => {
+      const hourTime = new Date(hourTimestamp).getTime();
+      const ageH = (now - hourTime) / 36e5; // Convert to hours
+
+      if (ageH <= 1) buckets["1h"] += count;
+      else if (ageH <= 3) buckets["3h"] += count;
+      else if (ageH <= 6) buckets["6h"] += count;
+      else if (ageH <= 12) buckets["12h"] += count;
+      else if (ageH <= 24) buckets["24h"] += count;
+      else if (ageH <= 48) buckets["48h"] += count;
+    });
+
+    return buckets;
+  };
+
   const handleSelectToken = async (token_symbol, fromTrending = false) => {
     const raw = token_symbol;
     const symbol = raw.toUpperCase();
@@ -146,22 +174,23 @@ const TwitterScan = () => {
         
         const volumeData = await volumeRes.json();
         
-        if (!volumeData.tweets || volumeData.tweets.length === 0) {
+        if (!volumeData.total || volumeData.total === 0) {
           alert(`No tweet data found for token "${symbol}".`);
           return;
         }
         
-        // Process the volume data similar to existing tweet processing
-        const buckets = groupIntoBuckets(volumeData.tweets);
+        // Convert volume service buckets to the format expected by the UI
+        const buckets = convertVolumeBucketsToIntervals(volumeData.buckets);
         
         setWatchlist((prev) => [
           ...prev,
           {
             token: symbol,
-            total: Object.values(buckets).reduce((a, b) => a + b, 0),
+            total: volumeData.total,
             intervals: buckets,
             history: ["1h", "3h", "6h", "12h", "24h", "48h"].map((k) => buckets[k]),
             preloaded: fromTrending,
+            isVolumeSearch: true, // Flag to indicate this came from volume search
           },
         ]);
         
