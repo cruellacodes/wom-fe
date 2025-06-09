@@ -121,6 +121,7 @@ const TwitterScan = () => {
     const raw = token_symbol;
     const symbol = raw.toUpperCase();
     const normalized = symbol.toLowerCase();
+    
     if (watchlist.some((t) => t.token === symbol)) return;
 
     const { data: tokenData } = await supabase
@@ -129,7 +130,57 @@ const TwitterScan = () => {
       .eq("token_symbol", normalized)
       .maybeSingle();
 
-    if (!tokenData?.is_active) return;
+    // Check if token doesn't exist in database
+    if (!tokenData) {
+      try {
+        // Call the volume endpoint to get tweet data for new token
+        const volumeRes = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/volume/${normalized}`
+        );
+        
+        if (!volumeRes.ok) {
+          const errorData = await volumeRes.json().catch(() => ({ detail: 'Unknown error' }));
+          alert(`Token "${symbol}" not found: ${errorData.detail || 'Failed to fetch token data'}`);
+          return;
+        }
+        
+        const volumeData = await volumeRes.json();
+        
+        if (!volumeData.tweets || volumeData.tweets.length === 0) {
+          alert(`No tweet data found for token "${symbol}".`);
+          return;
+        }
+        
+        // Process the volume data similar to existing tweet processing
+        const buckets = groupIntoBuckets(volumeData.tweets);
+        
+        setWatchlist((prev) => [
+          ...prev,
+          {
+            token: symbol,
+            total: Object.values(buckets).reduce((a, b) => a + b, 0),
+            intervals: buckets,
+            history: ["1h", "3h", "6h", "12h", "24h", "48h"].map((k) => buckets[k]),
+            preloaded: fromTrending,
+          },
+        ]);
+        
+        setSearchInput("");
+        setFilteredOptions(tokenOptions);
+        return;
+        
+      } catch (err) {
+        console.error("Volume endpoint failed:", err);
+        alert(`Failed to fetch data for token "${symbol}". Please try again.`);
+        return;
+      }
+    }
+
+    // Check if token exists but is not active
+    if (!tokenData.is_active) {
+      alert(`Token "${symbol}" is currently inactive.`);
+      return;
+    }
 
     try {
       let tweets = [];
@@ -169,6 +220,7 @@ const TwitterScan = () => {
       ]);
     } catch (err) {
       console.error("Token selection failed:", err);
+      alert("Failed to fetch token data. Please try again.");
     }
 
     setSearchInput("");
@@ -265,6 +317,9 @@ const TwitterScan = () => {
               } else if (e.key === "Enter" && highlightedIndex >= 0) {
                 e.preventDefault();
                 handleSelectToken(filteredOptions[highlightedIndex].token_symbol);
+              } else if (e.key === "Enter" && searchInput.trim()) {
+                e.preventDefault();
+                handleSelectToken(searchInput.trim());
               } else if (e.key === "Escape") {
                 setHighlightedIndex(-1);
               }
