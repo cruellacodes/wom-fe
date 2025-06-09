@@ -24,6 +24,34 @@ import { fetchTopActiveTokensByTweetCount } from "../utils/fetchTopActiveTokensB
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
 const WATCHLIST_KEY = "twitterScanWatchlist";
+const TRENDING_LOADED_KEY = "twitterScanTrendingLoaded";
+
+// Shimmer loading card component
+const ShimmerCard = () => (
+  <div className="bg-[#13131A] border border-[#2A2A2A] p-5 rounded-xl animate-pulse">
+    <div className="flex justify-between items-start mb-2">
+      <div className="h-4 bg-[#2A2A2A] rounded w-16 shimmer"></div>
+      <div className="flex flex-col items-end gap-1">
+        <div className="flex gap-2">
+          <div className="w-4 h-4 bg-[#2A2A2A] rounded shimmer"></div>
+          <div className="w-4 h-4 bg-[#2A2A2A] rounded shimmer"></div>
+        </div>
+        <div className="h-3 bg-[#2A2A2A] rounded w-20 shimmer"></div>
+      </div>
+    </div>
+    
+    <div className="space-y-2 mb-4">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="flex justify-between">
+          <div className="h-3 bg-[#2A2A2A] rounded w-6 shimmer"></div>
+          <div className="h-3 bg-[#2A2A2A] rounded w-8 shimmer"></div>
+        </div>
+      ))}
+    </div>
+    
+    <div className="h-[180px] bg-[#2A2A2A] rounded shimmer"></div>
+  </div>
+);
 
 const TwitterScan = () => {
   const [watchlist, setWatchlist] = useState([]);
@@ -31,6 +59,7 @@ const TwitterScan = () => {
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingTokens, setLoadingTokens] = useState(new Set()); // Track individual token loading
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const cardRefs = useRef({});
@@ -69,7 +98,12 @@ const TwitterScan = () => {
 
     const preloadTrending = async () => {
       const stored = localStorage.getItem(WATCHLIST_KEY);
-      if (!mounted || (stored && JSON.parse(stored)?.length > 0)) return;
+      const trendingLoaded = localStorage.getItem(TRENDING_LOADED_KEY);
+      
+      // Skip if we have watchlist items or already loaded trending tokens in this session
+      if (!mounted || (stored && JSON.parse(stored)?.length > 0) || trendingLoaded) {
+        return;
+      }
 
       setLoading(true);
       try {
@@ -78,6 +112,8 @@ const TwitterScan = () => {
           if (!mounted) return;
           await handleSelectToken(token, true);
         }
+        // Mark that we've loaded trending tokens for this session
+        localStorage.setItem(TRENDING_LOADED_KEY, "true");
       } catch (err) {
         console.error("Failed to preload trending tokens", err);
       } finally {
@@ -89,6 +125,13 @@ const TwitterScan = () => {
 
     return () => {
       mounted = false;
+    };
+  }, []);
+
+  // Clear trending loaded flag when component unmounts (page navigation)
+  useEffect(() => {
+    return () => {
+      localStorage.removeItem(TRENDING_LOADED_KEY);
     };
   }, []);
 
@@ -152,6 +195,9 @@ const TwitterScan = () => {
     
     if (watchlist.some((t) => t.token === symbol)) return;
 
+    // Add to loading set
+    setLoadingTokens(prev => new Set([...prev, symbol]));
+
     const { data: tokenData } = await supabase
       .from("tokens")
       .select("is_active")
@@ -169,6 +215,11 @@ const TwitterScan = () => {
         if (!volumeRes.ok) {
           const errorData = await volumeRes.json().catch(() => ({ detail: 'Unknown error' }));
           alert(`Token "${symbol}" not found: ${errorData.detail || 'Failed to fetch token data'}`);
+          setLoadingTokens(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(symbol);
+            return newSet;
+          });
           return;
         }
         
@@ -176,6 +227,11 @@ const TwitterScan = () => {
         
         if (!volumeData.total || volumeData.total === 0) {
           alert(`No tweet data found for token "${symbol}".`);
+          setLoadingTokens(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(symbol);
+            return newSet;
+          });
           return;
         }
         
@@ -196,11 +252,21 @@ const TwitterScan = () => {
         
         setSearchInput("");
         setFilteredOptions(tokenOptions);
+        setLoadingTokens(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(symbol);
+          return newSet;
+        });
         return;
         
       } catch (err) {
         console.error("Volume endpoint failed:", err);
         alert(`Failed to fetch data for token "${symbol}". Please try again.`);
+        setLoadingTokens(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(symbol);
+          return newSet;
+        });
         return;
       }
     }
@@ -208,6 +274,11 @@ const TwitterScan = () => {
     // Check if token exists but is not active
     if (!tokenData.is_active) {
       alert(`Token "${symbol}" is currently inactive.`);
+      setLoadingTokens(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(symbol);
+        return newSet;
+      });
       return;
     }
 
@@ -232,6 +303,11 @@ const TwitterScan = () => {
 
       if (tweets.length === 0) {
         alert("No tweet data found for this token.");
+        setLoadingTokens(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(symbol);
+          return newSet;
+        });
         return;
       }
 
@@ -252,6 +328,11 @@ const TwitterScan = () => {
       alert("Failed to fetch token data. Please try again.");
     }
 
+    setLoadingTokens(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(symbol);
+      return newSet;
+    });
     setSearchInput("");
     setFilteredOptions(tokenOptions);
   };
@@ -380,16 +461,18 @@ const TwitterScan = () => {
 
       <div className="px-6 max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
         {loading ? (
-          <div className="col-span-full text-center text-[#999] italic animate-pulse">
-            Fetching trending tokens...
-          </div>
-        ) : watchlist.length === 0 ? (
-          <div className="col-span-full text-center text-[#777] italic mt-8">
-            Your watchlist is empty. Search for a token above to get started.
-          </div>
+          <>
+            <div className="col-span-full text-center text-[#999] italic animate-pulse mb-6">
+              Fetching trending token...
+            </div>
+            {/* Show shimmer cards while loading trending */}
+            <ShimmerCard />
+          </>
         ) : (
-          watchlist.map(({ token, total, intervals, history, preloaded }, index) => (
-            <div key={index} className="relative">
+          <>
+            {/* Render actual watchlist cards */}
+            {watchlist.map(({ token, total, intervals, history, preloaded }, index) => (
+              <div key={index} className="relative">
                 {preloaded && (
                   <div className="absolute -top-4 left-1 z-10">
                     <span className="text-xs bg-[#1A1A1A] px-3 py-1 rounded-full border border-[#FF4DFF] text-[#FF4DFF] w-fit">
@@ -401,77 +484,113 @@ const TwitterScan = () => {
                   ref={(el) => (cardRefs.current[token] = el)}
                   className="relative bg-[#13131A] border border-[#2A2A2A] p-5 rounded-xl transition-all hover:shadow-[0_0_15px_#FF4DFF40]"
                 >
-
-                <div className="flex justify-between items-start mb-2">
-                  <h2 className="text-base font-normal">{token}</h2>
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleShare(token)}
-                        title="Download card"
-                        className="text-[#888] hover:text-white transition-all"
-                      >
-                        <ArrowDownTrayIcon className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleRemoveToken(token)}
-                        title="Remove"
-                        className="text-[#888] hover:text-red-500 transition-all"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="text-xs text-[#FF4DFF] mt-1">
-                      {total.toLocaleString()} <span className="text-[#AAA]">tweets</span>
+                  <div className="flex justify-between items-start mb-2">
+                    <h2 className="text-base font-normal">{token}</h2>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleShare(token)}
+                          title="Download card"
+                          className="text-[#888] hover:text-white transition-all"
+                        >
+                          <ArrowDownTrayIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveToken(token)}
+                          title="Remove"
+                          className="text-[#888] hover:text-red-500 transition-all"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="text-xs text-[#FF4DFF] mt-1">
+                        {total.toLocaleString()} <span className="text-[#AAA]">tweets</span>
+                      </div>
                     </div>
                   </div>
+
+                  <ul className="text-sm text-[#AAA] space-y-1 mb-4">
+                    {Object.entries(intervals).map(([label, value]) => (
+                      <li key={label} className="flex justify-between">
+                        <span>{label}</span>
+                        <span>{value.toLocaleString()}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Bar
+                    data={{
+                      labels: ["1h", "3h", "6h", "12h", "24h", "48h"],
+                      datasets: [
+                        {
+                          label: "Tweet Volume",
+                          data: history,
+                          backgroundColor: "rgba(255, 77, 255, 0.5)",
+                          borderRadius: 6,
+                        },
+                      ],
+                    }}
+                    options={{
+                      plugins: { legend: { display: false } },
+                      responsive: true,
+                      animation: { duration: 800, easing: "easeOutQuart" },
+                      scales: {
+                        x: {
+                          ticks: { color: "#EAEAEA" },
+                          grid: { color: "#222" },
+                        },
+                        y: {
+                          ticks: { color: "#EAEAEA" },
+                          grid: { color: "#222" },
+                        },
+                      },
+                    }}
+                    height={180}
+                  />
                 </div>
-
-                <ul className="text-sm text-[#AAA] space-y-1 mb-4">
-                  {Object.entries(intervals).map(([label, value]) => (
-                    <li key={label} className="flex justify-between">
-                      <span>{label}</span>
-                      <span>{value.toLocaleString()}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Bar
-                  data={{
-                    labels: ["1h", "3h", "6h", "12h", "24h", "48h"],
-                    datasets: [
-                      {
-                        label: "Tweet Volume",
-                        data: history,
-                        backgroundColor: "rgba(255, 77, 255, 0.5)",
-                        borderRadius: 6,
-                      },
-                    ],
-                  }}
-                  options={{
-                    plugins: { legend: { display: false } },
-                    responsive: true,
-                    animation: { duration: 800, easing: "easeOutQuart" },
-                    scales: {
-                      x: {
-                        ticks: { color: "#EAEAEA" },
-                        grid: { color: "#222" },
-                      },
-                      y: {
-                        ticks: { color: "#EAEAEA" },
-                        grid: { color: "#222" },
-                      },
-                    },
-                  }}
-                  height={180}
-                />
               </div>
-            </div>
-          ))
+            ))}
+
+            {/* Render shimmer cards for tokens currently being loaded */}
+            {Array.from(loadingTokens).map((token) => (
+              <div key={`loading-${token}`} className="relative">
+                <div className="absolute -top-4 left-1 z-10">
+                  <span className="text-xs bg-[#1A1A1A] px-3 py-1 rounded-full border border-[#FF4DFF] text-[#FF4DFF] w-fit animate-pulse">
+                    Loading {token}...
+                  </span>
+                </div>
+                <ShimmerCard />
+              </div>
+            ))}
+
+            {/* Empty state */}
+            {watchlist.length === 0 && loadingTokens.size === 0 && (
+              <div className="col-span-full text-center text-[#777] italic mt-8">
+                Your watchlist is empty. Search for a token above to get started.
+              </div>
+            )}
+          </>
         )}
       </div>
 
       <Footer />
+      
+      <style>{`
+        .shimmer {
+          background: linear-gradient(90deg, #2A2A2A 25%, #3A3A3A 50%, #2A2A2A 75%);
+          background-size: 200% 100%;
+          animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+      `}</style>
     </div>
   );
 };
