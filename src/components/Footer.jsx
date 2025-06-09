@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
-import { FaTelegramPlane, FaGithub } from "react-icons/fa";
+import { FaGithub } from "react-icons/fa";
 import { SiX } from "react-icons/si";
 import { ArrowUpIcon } from "@heroicons/react/24/solid";
 import Logo from "../assets/logo.png";
@@ -30,7 +30,7 @@ const Footer = () => {
             {[
               { label: "Docs", path: "https://github.com/cruellacodes/wom/blob/main/README.md" },
               { label: "Premium", path: "/premium" },
-              { label: "WOM Score", path: "https://github.com/cruellacodes/wom/blob/main/wom/cryptoBertPaper.md" },
+              { label: "WOM Score", path: "https://github.com/cruellacodes/wom/blob/main/wom/sentimentEngine.md" },
               { label: "Contact", path: "/contact" },
             ].map(({ label, path }, i) => (
               <li key={i}>
@@ -49,8 +49,8 @@ const Footer = () => {
           <div className="flex flex-col items-start md:items-end gap-2">
             <div className="flex gap-4">
               {[
-                { icon: <SiX className="w-5 h-5" />, link: "https://x.com/wordofmouth_ai" },
-                { icon: <FaTelegramPlane className="w-5 h-5" />, link: "https://t.me/YOUR_HANDLE" },
+                { icon: <SiX className="w-5 h-5" />, link: "https://x.com/womdotfun" },
+                // { icon: <FaTelegramPlane className="w-5 h-5" />, link: "https://t.me/YOUR_HANDLE" },
                 { icon: <FaGithub className="w-5 h-5" />, link: "https://github.com/cruellacodes" },
               ].map(({ icon, link }, idx) => (
                 <a

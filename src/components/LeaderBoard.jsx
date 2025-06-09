@@ -277,6 +277,16 @@ const Leaderboard = React.memo(
     
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-white">
                       <div className="flex items-center gap-2">
+                        {token.first_spotted_by && (
+                          <div className="relative group">
+                            <span className="animate-pulse bg-yellow-400/10 border border-yellow-400 text-yellow-300 text-[10px] font-bold px-1.5 py-0.5 rounded-sm uppercase">
+                              ⚡
+                            </span>
+                            <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max max-w-[200px] px-2 py-1 text-xs text-white bg-black border border-gray-700 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
+                              First spotted by @{token.first_spotted_by}
+                            </div>
+                          </div>
+                        )}
                         {token.image_url && (
                           <img
                             src={token.image_url}
