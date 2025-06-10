@@ -149,7 +149,8 @@ const TweetScatterChart = ({ searchedToken, tweets, isFetchingTweets, isAnalyzin
       .style("font-size", "12px")
       .style("pointer-events", "none")
       .style("opacity", 0)
-      .style("max-width", "240px");
+      .style("max-width", "240px")
+      .style("word-break", "break-word");
 
     chartData.forEach((d, i) => {
       defs.append("pattern")
