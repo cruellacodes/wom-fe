@@ -8,6 +8,7 @@ import {
 import solanaIcon from "../assets/solana.png";
 import TokenSentimentChart from "./TokenSentimentChart";
 import { AiOutlineLineChart } from "react-icons/ai";
+import { FaCopy } from "react-icons/fa";
 
 const PAGE_SIZE = 20;
 
@@ -25,6 +26,7 @@ const Leaderboard = React.memo(
     const [searchQuery, setSearchQuery] = useState("");
     const [ageFilter, setAgeFilter] = useState("All");
     const [categoryFilter, setCategoryFilter] = useState("Trending");
+    const [showCopyNotification, setShowCopyNotification] = useState(false);
     const TokenSentimentChartRef = useRef(null);
 
     const formatLaunchpadLabel = (value) => {
@@ -35,6 +37,37 @@ const Leaderboard = React.memo(
         believe: "believe",
       };
       return map[value.toLowerCase()] || value;
+    };
+
+    // Function to extract token address from dex_url
+    const extractTokenAddress = (dexUrl) => {
+      if (!dexUrl) return null;
+      // Extract address from URL like https://axiom.trade/t/4zDvBs8TYrp1Srdh7zWAj6BTUqiHPArEDbrPCK39vBLV/@wom
+      const match = dexUrl.match(/\/t\/([A-Za-z0-9]+)/);
+      return match ? match[1] : null;
+    };
+
+    // Function to copy token address to clipboard
+    const copyTokenAddress = async (token, e) => {
+      e.stopPropagation();
+      const tokenAddress = extractTokenAddress(token.dex_url);
+      
+      if (!tokenAddress) {
+        console.error('No token address found');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(tokenAddress);
+        setShowCopyNotification(true);
+        
+        // Hide notification after 3 seconds
+        setTimeout(() => {
+          setShowCopyNotification(false);
+        }, 3000);
+      } catch (err) {
+        console.error('Failed to copy token address:', err);
+      }
     };
     
     useEffect(() => {
@@ -129,6 +162,22 @@ const Leaderboard = React.memo(
 
     return (
       <div className="p-6 rounded-2xl bg-[#0A0F0A]/80 border border-[#1b1b1b] shadow-2xl backdrop-blur-md">
+        {/* Copy Notification */}
+        {showCopyNotification && (
+          <div className="fixed top-6 right-6 z-50 bg-gradient-to-r from-green-900/95 to-emerald-900/95 backdrop-blur-lg border border-green-400/30 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slide-in min-w-[280px]">
+            <div className="w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+              <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-green-50">Success!</p>
+              <p className="text-xs text-green-100/80">Address copied to clipboard</p>
+            </div>
+            <div className="w-1 h-8 bg-gradient-to-b from-green-400 to-emerald-400 rounded-full"></div>
+          </div>
+        )}
+
         {/* Title */}
         <h2 className="text-center text-3xl font-semibold text-green-300 mb-8">
           Leaderboard
@@ -312,15 +361,24 @@ const Leaderboard = React.memo(
                         <span className="flex items-center gap-1">
                           {token.token_symbol?.toUpperCase()}
                           {token.dex_url && (
-                            <a
-                              href={token.dex_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-green-300"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <AiOutlineLineChart className="w-4 h-4" />
-                            </a>
+                            <>
+                              <a
+                                href={token.dex_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-green-300"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <AiOutlineLineChart className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={(e) => copyTokenAddress(token, e)}
+                                className="group relative hover:text-green-300 transition-all duration-200 p-1.5 rounded-md hover:bg-green-900/20 cursor-pointer"
+                                title="Copy token address"
+                              >
+                                <FaCopy className="w-3.5 h-3.5" />
+                              </button>
+                            </>
                           )}
                           {token.launchpad && token.launchpad !== "unknown" && (
                             <span
@@ -421,5 +479,30 @@ const Leaderboard = React.memo(
     
   }
 );
+
+/* Add animation styles */
+const styles = `
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%) scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-in {
+    animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
+}
 
 export default Leaderboard;
