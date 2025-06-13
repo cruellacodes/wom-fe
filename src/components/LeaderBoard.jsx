@@ -4,11 +4,13 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  StarIcon,
 } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
 import TokenSentimentChart from "./TokenSentimentChart";
 import { AiOutlineLineChart } from "react-icons/ai";
 import { FaCopy } from "react-icons/fa";
+import SimpleFeaturedPayment from "./FeaturedPayment";
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +22,9 @@ const Leaderboard = React.memo(
     setScrollTokenSentimentChart,
     page,
     onPageChange,
+    // NEW PROPS for featured system
+    featuredTokens = [], // Array of featured tokens
+    onAddFeatured, // Callback when a token gets featured
   }) => {
     const [sortBy, setSortBy] = useState("wom_score");
     const [sortOrder, setSortOrder] = useState(-1);
@@ -27,6 +32,11 @@ const Leaderboard = React.memo(
     const [ageFilter, setAgeFilter] = useState("All");
     const [categoryFilter, setCategoryFilter] = useState("Trending");
     const [showCopyNotification, setShowCopyNotification] = useState(false);
+    
+    // NEW STATES for featured system
+    const [selectedTokenForFeatured, setSelectedTokenForFeatured] = useState(null);
+    const [showFeaturedPayment, setShowFeaturedPayment] = useState(false);
+    
     const TokenSentimentChartRef = useRef(null);
 
     const formatLaunchpadLabel = (value) => {
@@ -42,7 +52,6 @@ const Leaderboard = React.memo(
     // Function to extract token address from dex_url
     const extractTokenAddress = (dexUrl) => {
       if (!dexUrl) return null;
-      // Extract address from URL like https://axiom.trade/t/4zDvBs8TYrp1Srdh7zWAj6BTUqiHPArEDbrPCK39vBLV/@wom
       const match = dexUrl.match(/\/t\/([A-Za-z0-9]+)/);
       return match ? match[1] : null;
     };
@@ -61,13 +70,68 @@ const Leaderboard = React.memo(
         await navigator.clipboard.writeText(tokenAddress);
         setShowCopyNotification(true);
         
-        // Hide notification after 3 seconds
         setTimeout(() => {
           setShowCopyNotification(false);
         }, 3000);
       } catch (err) {
         console.error('Failed to copy token address:', err);
       }
+    };
+
+    // NEW: Handle featuring a token
+    const handleFeatureToken = (token, e) => {
+      e?.stopPropagation();
+      setSelectedTokenForFeatured(token);
+      setShowFeaturedPayment(true);
+    };
+
+    // NEW: Handle successful payment
+    const handlePaymentSuccess = (paymentData) => {
+      const { token, duration, price } = paymentData;
+      const featuredUntil = new Date(Date.now() + (duration * 60 * 60 * 1000));
+      
+      const featuredToken = {
+        ...token,
+        is_featured: true,
+        featured_until: featuredUntil,
+        featured_duration_hours: duration,
+        featured_price: price,
+        featured_at: new Date()
+      };
+
+      // Add to featured tokens list
+      onAddFeatured?.(featuredToken);
+      
+      // Show success notification
+      setShowCopyNotification(true);
+      setTimeout(() => setShowCopyNotification(false), 3000);
+    };
+
+    // NEW: Check if a token is currently featured and not expired
+    const isTokenFeatured = (token) => {
+      const featured = featuredTokens.find(ft => 
+        ft.token_symbol === token.token_symbol &&
+        ft.featured_until &&
+        new Date(ft.featured_until) > new Date()
+      );
+      return featured;
+    };
+
+    // NEW: Get remaining time for featured token
+    const getRemainingTime = (featuredUntil) => {
+      const now = new Date();
+      const end = new Date(featuredUntil);
+      const diff = end - now;
+      
+      if (diff <= 0) return null;
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      }
+      return `${minutes}m`;
     };
     
     useEffect(() => {
@@ -97,7 +161,6 @@ const Leaderboard = React.memo(
       return num.toLocaleString();
     };
 
-     // Parses "2d", "3h", "<1h", etc. into numeric hours
     const parseAgeToHours = (ageStr) => {
       if (!ageStr) return Infinity;
       if (ageStr === "<1h") return 0.5;
@@ -106,8 +169,25 @@ const Leaderboard = React.memo(
       return Infinity;
     };
 
+    // UPDATED: Modified filtering to handle featured tokens
     const filteredTokens = useMemo(() => {
-      let sorted = [...tokens].sort((a, b) => {
+      // Get currently active featured tokens (not expired)
+      const currentFeatured = featuredTokens.filter(ft => 
+        ft.featured_until && new Date(ft.featured_until) > new Date()
+      );
+
+      // Get top 3 featured tokens (sorted by remaining time - less remaining = higher priority)
+      const topFeatured = currentFeatured
+        .sort((a, b) => new Date(a.featured_until) - new Date(b.featured_until))
+        .slice(0, 3);
+
+      // Regular tokens (excluding those that are featured)
+      const regularTokens = tokens.filter(token => 
+        !topFeatured.some(ft => ft.token_symbol === token.token_symbol)
+      );
+
+      // Sort regular tokens
+      let sorted = [...regularTokens].sort((a, b) => {
         let aVal = a[sortBy] ?? 0;
         let bVal = b[sortBy] ?? 0;
     
@@ -119,27 +199,29 @@ const Leaderboard = React.memo(
         return sortOrder * (aVal - bVal);
       });
 
+      // Apply filters to regular tokens
       sorted = sorted.filter((token) => {
         const age = parseAgeToHours(token.age);
         switch (ageFilter) {
           case "6h": return age <= 6;
           case "24h": return age <= 24;
-          case "1w": return age <= 168; // 7 days * 24
+          case "1w": return age <= 168;
           case "All": return true;
           default: return true;
         }        
       });
       
-      // Category filter
       if (categoryFilter !== "Trending") {
         sorted = sorted.filter((t) => t.launchpad?.toLowerCase() === categoryFilter.toLowerCase());
       }  
 
-      // Search
-      return sorted.filter((token) =>
+      sorted = sorted.filter((token) =>
         token.token_symbol?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-    }, [tokens, sortBy, sortOrder, searchQuery, ageFilter, categoryFilter]);
+
+      // IMPORTANT: Combine featured tokens first (top 3), then regular tokens
+      return [...topFeatured, ...sorted];
+    }, [tokens, featuredTokens, sortBy, sortOrder, searchQuery, ageFilter, categoryFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredTokens.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
@@ -162,7 +244,7 @@ const Leaderboard = React.memo(
 
     return (
       <div className="p-6 rounded-2xl bg-[#0A0F0A]/80 border border-[#1b1b1b] shadow-2xl backdrop-blur-md">
-        {/* Copy Notification */}
+        {/* Success Notification */}
         {showCopyNotification && (
           <div className="fixed top-6 right-6 z-50 bg-gradient-to-r from-green-900/95 to-emerald-900/95 backdrop-blur-lg border border-green-400/30 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slide-in min-w-[280px]">
             <div className="w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -172,11 +254,24 @@ const Leaderboard = React.memo(
             </div>
             <div className="flex-1">
               <p className="font-semibold text-sm text-green-50">Success!</p>
-              <p className="text-xs text-green-100/80">Address copied to clipboard</p>
+              <p className="text-xs text-green-100/80">
+                {selectedTokenForFeatured ? 'Token featured successfully!' : 'Address copied to clipboard'}
+              </p>
             </div>
             <div className="w-1 h-8 bg-gradient-to-b from-green-400 to-emerald-400 rounded-full"></div>
           </div>
         )}
+
+        {/* Featured Payment Modal */}
+        <SimpleFeaturedPayment
+          isOpen={showFeaturedPayment}
+          onClose={() => {
+            setShowFeaturedPayment(false);
+            setSelectedTokenForFeatured(null);
+          }}
+          userToken={selectedTokenForFeatured}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
 
         {/* Title */}
         <h2 className="text-center text-3xl font-semibold text-green-300 mb-8">
@@ -185,7 +280,6 @@ const Leaderboard = React.memo(
     
         {/* Search + Filters */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-          {/* Search */}
           <input
             type="text"
             value={searchQuery}
@@ -197,7 +291,6 @@ const Leaderboard = React.memo(
             className="w-full md:w-64 text-sm px-4 py-2 rounded-full bg-[#111]/80 text-white border border-[#2a2a2a] focus:ring-2 focus:ring-green-400 focus:outline-none placeholder-gray-500 transition"
           />
     
-          {/* Launchpad Filter */}
           <div className="flex flex-wrap gap-2">
             {["Trending", "Pumpfun", "Bonk", "Boop", "Believe"].map((val) => {
               const isActive = categoryFilter === val;
@@ -235,10 +328,8 @@ const Leaderboard = React.memo(
                 </button>
               );
             })}
-
           </div>
     
-          {/* Age Filter */}
           <div className="flex flex-wrap gap-2">
             {["6h", "24h", "1w", "All"].map((val) => (
               <button
@@ -265,7 +356,7 @@ const Leaderboard = React.memo(
             <thead className="sticky top-0 z-10">
               <tr className="bg-[#0f1b15]/80 text-green-300 uppercase text-xs tracking-widest border-b border-green-800/40">
                 <th className="px-4 py-3 text-left">Chain</th>
-                <th className="px-1 py-3 w-8"></th> {/* Empty header for lightning column */}
+                <th className="px-1 py-3 w-8"></th>
                 {[
                   { key: "token_symbol", label: "Token" },
                   { key: "wom_score", label: "WOM Score" },
@@ -311,136 +402,182 @@ const Leaderboard = React.memo(
                     {label} {renderSortArrow(key)}
                   </th>
                 ))}
+                <th className="px-4 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {pagedTokens.length > 0 ? (
-                pagedTokens.map((token) => (
-                  <tr
-                    key={token.token_symbol}
-                    onClick={() => onTokenClick(token)}
-                    className="border-b border-[#1f1f1f] hover:bg-green-900/10 transition cursor-pointer"
-                  >
-                    <td className="px-4 py-3">
-                      <img src={solanaIcon} alt="Solana" className="w-5 h-5" />
-                    </td>
+                pagedTokens.map((token, index) => {
+                  // NEW: Check if this token is featured
+                  const featuredData = isTokenFeatured(token);
+                  const isFeatured = !!featuredData;
+                  const remainingTime = featuredData ? getRemainingTime(featuredData.featured_until) : null;
+                  const isTopThreeFeatured = isFeatured && index < 3;
 
-                    {/* Lightning column - separate from Token column */}
-                    <td className="px-1 py-3 w-8">
-                      {token.first_spotted_by && (
-                        <div className="relative group flex justify-center">
-                          <span 
-                            className="animate-pulse bg-yellow-400/10 text-yellow-300 text-[8px] font-bold px-1 py-0.5 rounded-sm uppercase cursor-pointer hover:bg-yellow-400/20 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(`https://x.com/${token.first_spotted_by}`, '_blank');
-                            }}
-                          >
-                            ⚡
-                          </span>
-                          <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max min-w-[180px] max-w-[220px] px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
-                            <div className="whitespace-nowrap">First spotted by @{token.first_spotted_by}</div>
-                            <div className="text-gray-400 whitespace-nowrap">Click to view profile</div>
+                  return (
+                    <tr
+                      key={token.token_symbol}
+                      onClick={() => onTokenClick(token)}
+                      className={`border-b border-[#1f1f1f] hover:bg-green-900/10 transition cursor-pointer ${
+                        isTopThreeFeatured 
+                          ? 'bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border-yellow-600/30' 
+                          : ''
+                      }`}
+                    >
+                      <td className="px-4 py-3">
+                        <img src={solanaIcon} alt="Solana" className="w-5 h-5" />
+                      </td>
+
+                      {/* NEW: Lightning/Star column */}
+                      <td className="px-1 py-3 w-8">
+                        {isTopThreeFeatured ? (
+                          <div className="relative group flex justify-center">
+                            <StarIcon className="w-5 h-5 text-yellow-400 animate-pulse" />
+                            <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
+                              <div className="whitespace-nowrap">Featured spot #{index + 1}</div>
+                              {remainingTime && (
+                                <div className="text-yellow-400 whitespace-nowrap">{remainingTime} remaining</div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3 whitespace-nowrap font-medium text-white">
-                      <div className="flex items-center gap-2">
-                        {/* Token image */}
-                        {token.image_url && (
-                          <img
-                            src={token.image_url}
-                            alt={token.token_symbol}
-                            className="w-5 h-5 rounded-full border border-green-800"
-                          />
+                        ) : (
+                          token.first_spotted_by && (
+                            <div className="relative group flex justify-center">
+                              <span 
+                                className="animate-pulse bg-yellow-400/10 text-yellow-300 text-[8px] font-bold px-1 py-0.5 rounded-sm uppercase cursor-pointer hover:bg-yellow-400/20 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`https://x.com/${token.first_spotted_by}`, '_blank');
+                                }}
+                              >
+                                ⚡
+                              </span>
+                              <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max min-w-[180px] max-w-[220px] px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
+                                <div className="whitespace-nowrap">First spotted by @{token.first_spotted_by}</div>
+                                <div className="text-gray-400 whitespace-nowrap">Click to view profile</div>
+                              </div>
+                            </div>
+                          )
                         )}
+                      </td>
 
-                        {/* Token symbol and other elements */}
-                        <span className="flex items-center gap-1">
-                          {token.token_symbol?.toUpperCase()}
-                          {token.dex_url && (
-                            <>
-                              <a
-                                href={token.dex_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:text-green-300"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <AiOutlineLineChart className="w-4 h-4" />
-                              </a>
-                              <button
-                                onClick={(e) => copyTokenAddress(token, e)}
-                                className="group relative hover:text-green-300 transition-all duration-200 p-1.5 rounded-md hover:bg-green-900/20 cursor-pointer"
-                                title="Copy token address"
-                              >
-                                <FaCopy className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                      <td className="px-4 py-3 whitespace-nowrap font-medium text-white">
+                        <div className="flex items-center gap-2">
+                          {token.image_url && (
+                            <img
+                              src={token.image_url}
+                              alt={token.token_symbol}
+                              className="w-5 h-5 rounded-full border border-green-800"
+                            />
                           )}
-                          {token.launchpad && token.launchpad !== "unknown" && (
-                            <span
-                              className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
-                                token.launchpad.toLowerCase() === "pumpfun"
-                                  ? "bg-[#90fcb3] text-[#0f1f17]"
-                                  : token.launchpad.toLowerCase() === "bonk"
-                                  ? "bg-[#f7f700] text-black"
-                                  : token.launchpad.toLowerCase() === "boop"
-                                  ? "bg-[#90caff] text-[#0a0f1a]"
-                                  : token.launchpad.toLowerCase() === "believe"
-                                  ? "bg-[#00FF00] text-black"
-                                  : "bg-purple-900 text-purple-300"
-                              }`}
-                            >
-                              {formatLaunchpadLabel(token.launchpad)}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    </td>
-    
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-16 h-2 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
-                          <div
-                            className={`h-full ${getBatteryColor(token.wom_score ?? 0)}`}
-                            style={{ width: `${token.wom_score ?? 0}%` }}
-                          />
+
+                          <span className="flex items-center gap-1">
+                            {token.token_symbol?.toUpperCase()}
+                            {token.dex_url && (
+                              <>
+                                <a
+                                  href={token.dex_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-green-300"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <AiOutlineLineChart className="w-4 h-4" />
+                                </a>
+                                <button
+                                  onClick={(e) => copyTokenAddress(token, e)}
+                                  className="group relative hover:text-green-300 transition-all duration-200 p-1.5 rounded-md hover:bg-green-900/20 cursor-pointer"
+                                  title="Copy token address"
+                                >
+                                  <FaCopy className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                            {token.launchpad && token.launchpad !== "unknown" && (
+                              <span
+                                className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  token.launchpad.toLowerCase() === "pumpfun"
+                                    ? "bg-[#90fcb3] text-[#0f1f17]"
+                                    : token.launchpad.toLowerCase() === "bonk"
+                                    ? "bg-[#f7f700] text-black"
+                                    : token.launchpad.toLowerCase() === "boop"
+                                    ? "bg-[#90caff] text-[#0a0f1a]"
+                                    : token.launchpad.toLowerCase() === "believe"
+                                    ? "bg-[#00FF00] text-black"
+                                    : "bg-purple-900 text-purple-300"
+                                }`}
+                              >
+                                {formatLaunchpadLabel(token.launchpad)}
+                              </span>
+                            )}
+                            {/* NEW: Featured badge */}
+                            {isTopThreeFeatured && (
+                              <span className="ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-gradient-to-r from-yellow-600 to-orange-600 text-white animate-pulse">
+                                FEATURED
+                              </span>
+                            )}
+                          </span>
                         </div>
-                        <span className="text-xs font-semibold text-white whitespace-nowrap">
-                          {token.wom_score != null ? `${token.wom_score}%` : "—"}
-                        </span>
-                      </div>
-                    </td>
+                      </td>
+        
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="relative w-16 h-2 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
+                            <div
+                              className={`h-full ${getBatteryColor(token.wom_score ?? 0)}`}
+                              style={{ width: `${token.wom_score ?? 0}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-white whitespace-nowrap">
+                            {token.wom_score != null ? `${token.wom_score}%` : "—"}
+                          </span>
+                        </div>
+                      </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap text-white text-sm">
-                      {typeof token.avg_followers_count === "number"
-                        ? safeFormatNumber(token.avg_followers_count)
-                        : "—"}
-                    </td>
-    
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {safeFormatNumber(token.market_cap_usd)}
-                    </td>
-    
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {token.age ?? "—"}
-                    </td>
-    
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {safeFormatNumber(token.volume_usd)}
-                    </td>
-    
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {safeFormatNumber(token.liquidity_usd)}
-                    </td>
-                  </tr>
-                ))
+                      <td className="px-4 py-3 whitespace-nowrap text-white text-sm">
+                        {typeof token.avg_followers_count === "number"
+                          ? safeFormatNumber(token.avg_followers_count)
+                          : "—"}
+                      </td>
+        
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {safeFormatNumber(token.market_cap_usd)}
+                      </td>
+        
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {token.age ?? "—"}
+                      </td>
+        
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {safeFormatNumber(token.volume_usd)}
+                      </td>
+        
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {safeFormatNumber(token.liquidity_usd)}
+                      </td>
+
+                      {/* NEW: Actions column with Feature button */}
+                      <td className="px-4 py-3">
+                        {!isFeatured ? (
+                          <button
+                            onClick={(e) => handleFeatureToken(token, e)}
+                            className="px-3 py-1 text-xs bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-full font-medium transition-all transform hover:scale-105 flex items-center gap-1"
+                          >
+                            <StarIcon className="w-3 h-3" />
+                            Feature
+                          </button>
+                        ) : (
+                          <div className="text-xs text-yellow-400 font-medium">
+                            {remainingTime ? `${remainingTime} left` : 'Featured'}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-green-400">
+                  <td colSpan={10} className="text-center py-10 text-green-400">
                     No tokens match this filter.
                   </td>
                 </tr>
