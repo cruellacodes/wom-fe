@@ -166,9 +166,7 @@ function App() {
                 leaderboardRef.current?.scrollIntoView({ behavior: "smooth" })
               }
             />
-
             <Analytics />
-
             <ChartToggle
               show={showCharts}
               onToggle={() => setShowCharts((prev) => !prev)}
