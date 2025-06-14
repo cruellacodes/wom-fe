@@ -24,9 +24,11 @@ import TwitterScan from "./components/TwitterScan";
 import AppLoader from "./components/Loader";
 import ShillerScan from "./components/ShillerScan"
 import StocksAnalyzer from "./components/StocksAnalyzer.jsx"
+import GlobalFeaturedModal from "./components/GlobalFeaturedModal";
 
 import { useActiveTokens } from "./hooks/useActiveTokens";
 import { useTokenTweets } from "./hooks/useTokenTweets";
+import { supabase } from "./lib/supabaseClient";
 
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
 
@@ -53,10 +55,16 @@ function ChartToggle({ show, onToggle }) {
 }
 
 function App() {
+  // Your existing states
   const [searchedToken, setSearchedToken] = useState(null);
   const [filteredTweets, setFilteredTweets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showCharts, setShowCharts] = useState(true);
+
+  // NEW: Featured system states
+  const [featuredTokens, setFeaturedTokens] = useState([]);
+  const [showGlobalFeaturedModal, setShowGlobalFeaturedModal] = useState(false);
+  const [selectedTokenForGlobalFeatured, setSelectedTokenForGlobalFeatured] = useState(null);
 
   const tokenInfoRef = useRef(null);
   const leaderboardRef = useRef(null);
@@ -69,6 +77,182 @@ function App() {
   const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
   const fetchIdRef = useRef(0); 
   const [isTokenInfoLoading, setIsTokenInfoLoading] = useState(false);
+
+  // NEW: Auto-promotion system
+  useEffect(() => {
+    // Start monitoring for auto-promotions
+    startAutoPromotionSystem();
+    
+    // Load initial featured tokens
+    loadFeaturedTokens();
+
+    // Refresh featured tokens every 30 seconds
+    const refreshInterval = setInterval(loadFeaturedTokens, 30000);
+
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, []);
+
+  const startAutoPromotionSystem = () => {
+    // Check for promotions every minute
+    const promotionInterval = setInterval(promoteWaitingTokens, 60000);
+    
+    // Also check immediately
+    promoteWaitingTokens();
+
+    return () => clearInterval(promotionInterval);
+  };
+
+  const promoteWaitingTokens = async () => {
+    try {
+      const now = new Date().toISOString();
+
+      // 1. Mark expired spots as inactive
+      await supabase
+        .from('featured_spots')
+        .update({ is_active: false })
+        .eq('is_active', true)
+        .lt('featured_until', now);
+
+      // 2. Get available spot positions (1-3)
+      const { data: activeSpots } = await supabase
+        .from('featured_spots')
+        .select('spot_position')
+        .eq('is_active', true)
+        .gt('featured_until', now)
+        .not('spot_position', 'is', null);
+
+      const occupiedPositions = new Set(activeSpots?.map(spot => spot.spot_position) || []);
+      const availablePositions = [];
+
+      for (let i = 1; i <= 3; i++) {
+        if (!occupiedPositions.has(i)) {
+          availablePositions.push(i);
+        }
+      }
+
+      // 3. Promote waiting tokens to fill available spots
+      if (availablePositions.length > 0) {
+        const { data: waitingTokens } = await supabase
+          .from('featured_spots')
+          .select('*')
+          .eq('is_active', true)
+          .is('spot_position', null)
+          .order('created_at', { ascending: true }); // First paid, first promoted
+
+        if (waitingTokens?.length > 0) {
+          // Promote tokens to available spots
+          for (let i = 0; i < Math.min(availablePositions.length, waitingTokens.length); i++) {
+            const token = waitingTokens[i];
+            const position = availablePositions[i];
+
+            await supabase
+              .from('featured_spots')
+              .update({ 
+                spot_position: position,
+                featured_at: new Date().toISOString() // Update when actually featured
+              })
+              .eq('id', token.id);
+
+            console.log(`Auto-promoted ${token.token_symbol} to position ${position}`);
+          }
+
+          // Refresh featured tokens after promotions
+          loadFeaturedTokens();
+        }
+      }
+
+    } catch (error) {
+      console.error('Error in auto-promotion system:', error);
+    }
+  };
+
+  const loadFeaturedTokens = async () => {
+    try {
+      const now = new Date().toISOString();
+      
+      const { data: featuredSpots } = await supabase
+        .from('featured_spots')
+        .select('*')
+        .eq('is_active', true)
+        .gt('featured_until', now)
+        .not('spot_position', 'is', null)
+        .order('spot_position', { ascending: true });
+
+      const formattedFeatured = featuredSpots?.map(spot => ({
+        ...spot.token_data,
+        is_featured: true,
+        featured_until: spot.featured_until,
+        featured_duration_hours: spot.duration_hours,
+        featured_price: spot.price_sol,
+        featured_at: spot.featured_at,
+        spot_position: spot.spot_position
+      })) || [];
+
+      setFeaturedTokens(formattedFeatured);
+    } catch (error) {
+      console.error('Error loading featured tokens:', error);
+      // Fallback to localStorage if database fails
+      const savedFeatured = localStorage.getItem('featuredTokens');
+      if (savedFeatured) {
+        try {
+          const parsed = JSON.parse(savedFeatured);
+          const validFeatured = parsed.filter(ft => 
+            ft.featured_until && new Date(ft.featured_until) > new Date()
+          );
+          setFeaturedTokens(validFeatured);
+        } catch (localError) {
+          console.error('Error loading featured tokens from localStorage:', localError);
+        }
+      }
+    }
+  };
+
+  // Save featured tokens to localStorage as backup
+  useEffect(() => {
+    if (featuredTokens.length > 0) {
+      localStorage.setItem('featuredTokens', JSON.stringify(featuredTokens));
+    }
+  }, [featuredTokens]);
+
+  // Clean up expired featured tokens every minute
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      setFeaturedTokens(prev => {
+        const filtered = prev.filter(ft => 
+          ft.featured_until && new Date(ft.featured_until) > new Date()
+        );
+        return filtered.length !== prev.length ? filtered : prev;
+      });
+    }, 60000); // Check every minute
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
+  // Handle the "Get Featured" button from header bar
+  const handleGlobalFeaturedClick = () => {
+    if (tokens.length > 0) {
+      setShowGlobalFeaturedModal(true);
+    } else {
+      alert('No tokens available. Please wait for tokens to load.');
+    }
+  };
+
+  // Handle adding a new featured token (refresh from database)
+  const handleAddFeaturedToken = async (paymentData) => {
+    // Refresh the featured tokens list after a successful payment
+    await loadFeaturedTokens();
+    
+    console.log('Token featured successfully:', paymentData);
+  };
+
+  // Handle successful payment from global modal
+  const handleGlobalPaymentSuccess = (paymentData) => {
+    handleAddFeaturedToken(paymentData);
+    setShowGlobalFeaturedModal(false);
+    setSelectedTokenForGlobalFeatured(null);
+  };
 
   const nowUtc = useMemo(() => dayjs.utc(), []);
   const tweetsLast24h = useMemo(() => {
@@ -107,12 +291,11 @@ function App() {
     }
   }, [searchedToken, tokens, tweets, topWomTokens]);
 
-
   useEffect(() => {
     if (location?.state?.scrollTo === "leaderboard") {
       setTimeout(() => {
         leaderboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100); // small delay to ensure DOM is rendered
+      }, 100);
     }
   
     if (location?.state?.scrollTo === "sentiment") {
@@ -121,9 +304,6 @@ function App() {
       }, 100);
     }
   }, [location]);
-  
-
-
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(tokens.length / 20));
@@ -161,16 +341,20 @@ function App() {
         path="/"
         element={
           <div className="bg-[#010409] min-h-screen text-gray-300">
+            {/* UPDATED: Pass featured handler to Header */}
             <Header
               onScrollToLeaderboard={() =>
                 leaderboardRef.current?.scrollIntoView({ behavior: "smooth" })
               }
+              onFeaturedClick={handleGlobalFeaturedClick}
             />
             <Analytics />
             <ChartToggle
               show={showCharts}
               onToggle={() => setShowCharts((prev) => !prev)}
             />
+
+            <Analytics />
 
             <AnimatePresence>
               {showCharts && (
@@ -236,6 +420,7 @@ function App() {
               ref={leaderboardRef}
               className="max-w-7xl mx-auto px-6 mt-8 mb-8"
             >
+              {/* UPDATED: Pass featured system props to Leaderboard */}
               <Leaderboard
                 tokens={tokens}
                 tweets={tweets}
@@ -244,10 +429,27 @@ function App() {
                 page={currentPage}
                 onPageChange={handlePageChange}
                 setScrollToTweetSentimentAreaChart={tweetSentimentRef}
+                // NEW: Featured system props
+                featuredTokens={featuredTokens}
+                onAddFeatured={handleAddFeaturedToken}
               />
             </div>
 
             <Footer />
+
+            {/* NEW: Global Featured Token Selection Modal */}
+            <GlobalFeaturedModal
+              isOpen={showGlobalFeaturedModal}
+              onClose={() => {
+                setShowGlobalFeaturedModal(false);
+                setSelectedTokenForGlobalFeatured(null);
+              }}
+              tokens={tokens}
+              featuredTokens={featuredTokens}
+              onSelectToken={setSelectedTokenForGlobalFeatured}
+              selectedToken={selectedTokenForGlobalFeatured}
+              onPaymentSuccess={handleGlobalPaymentSuccess}
+            />
 
             <Toaster
               position="bottom-right"
