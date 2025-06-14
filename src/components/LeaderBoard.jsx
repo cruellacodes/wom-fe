@@ -6,11 +6,11 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   StarIcon,
+  ChartBarIcon,        // Replaces AiOutlineLineChart
+  ClipboardIcon,       // Replaces FaCopy
 } from "@heroicons/react/24/solid";
 import solanaIcon from "../assets/solana.png";
 import TokenSentimentChart from "./TokenSentimentChart";
-import { AiOutlineLineChart } from "react-icons/ai";
-import { FaCopy } from "react-icons/fa";
 import SimpleFeaturedPayment from "./FeaturedPayment";
 
 const PAGE_SIZE = 20;
@@ -490,14 +490,14 @@ const Leaderboard = React.memo(
                                   className="hover:text-green-300"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <AiOutlineLineChart className="w-4 h-4" />
+                                  <ChartBarIcon className="w-4 h-4" />
                                 </a>
                                 <button
                                   onClick={(e) => copyTokenAddress(token, e)}
                                   className="group relative hover:text-green-300 transition-all duration-200 p-1.5 rounded-md hover:bg-green-900/20 cursor-pointer"
                                   title="Copy token address"
                                 >
-                                  <FaCopy className="w-3.5 h-3.5" />
+                                  <ClipboardIcon className="w-3.5 h-3.5" />
                                 </button>
                               </>
                             )}

@@ -1,11 +1,13 @@
-import dayjs from "dayjs";
+// utils.jsx - Optimized version with native Date functions (NO dayjs)
 
 export const getTopTokensByTweetCount = (tokens, count = 3, tweets = [], filterLastHours = null) => {
-// filter tweets to only include recent ones
+  // Filter tweets to only include recent ones
   const filteredTweets = filterLastHours
     ? tweets.filter((t) => {
-        const createdAt = dayjs.utc(t.created_at);
-        return dayjs.utc().diff(createdAt, "hour") <= filterLastHours;
+        const createdAt = new Date(t.created_at);
+        const now = new Date();
+        const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+        return diffHours <= filterLastHours;
       })
     : tweets;
 
@@ -34,4 +36,38 @@ export const getTopTokensByWomScore = (tokens, count = 5) => {
   return [...tokens]
     .sort((a, b) => (b.wom_score ?? 0) - (a.wom_score ?? 0))
     .slice(0, count);
+};
+
+// Additional utility functions for date handling
+export const formatRelativeTime = (date) => {
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(date).getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffDays > 0) {
+    return `${diffDays}d ago`;
+  } else if (diffHours > 0) {
+    return `${diffHours}h ago`;
+  } else {
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    return diffMinutes > 0 ? `${diffMinutes}m ago` : 'Just now';
+  }
+};
+
+export const isWithinLast24Hours = (date) => {
+  const now = new Date();
+  const diffHours = (now.getTime() - new Date(date).getTime()) / (1000 * 60 * 60);
+  return diffHours <= 24;
+};
+
+export const formatDateString = (date, options = {}) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...options
+  });
 };

@@ -2,7 +2,7 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import * as d3 from "d3";
-import Logo from "../assets/logo.png";
+import Logo from "../assets/logo.webp";
 import { ArrowsPointingOutIcon } from "@heroicons/react/24/solid";
 
 const TweetScatterChart = ({ searchedToken, tweets, isFetchingTweets, isAnalyzingSentiment }) => {

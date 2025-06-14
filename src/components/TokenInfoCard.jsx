@@ -1,8 +1,10 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { useMemo } from "react";
 import solanaIcon from "../assets/solana.png";
-import { AiOutlineLineChart } from "react-icons/ai";
-import { HiOutlineInformationCircle } from "react-icons/hi";
+import { 
+  ChartBarIcon,           // Replaces AiOutlineLineChart
+  InformationCircleIcon   // Replaces HiOutlineInformationCircle
+} from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
 const getScoreColor = (score = 0) => {
@@ -64,7 +66,7 @@ const TokenInfoCard = React.memo(function TokenInfoCard({ token, isLoading }) {
           rel="noopener noreferrer"
           className="text-gray-400 hover:text-green-400 transition"
         >
-          <AiOutlineLineChart size={20} />
+          <ChartBarIcon className="w-5 h-5" />
         </a>
       </div>
 
@@ -90,7 +92,7 @@ const TokenInfoCard = React.memo(function TokenInfoCard({ token, isLoading }) {
         <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
           <span>WOM SCORE</span>
           <span className="relative group">
-            <HiOutlineInformationCircle className="w-4 h-4 cursor-pointer hover:text-green-400" />
+            <InformationCircleIcon className="w-4 h-4 cursor-pointer hover:text-green-400" />
             <div className="absolute left-4 top-5 z-10 hidden group-hover:block bg-[#0A0F0A] text-[11px] text-white p-2 rounded-md shadow-md w-52 border border-green-400">
               WOM (Word-of-Mouth) Score shows how much social buzz this token has on Twitter.
             </div>
