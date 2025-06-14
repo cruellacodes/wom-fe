@@ -9,7 +9,7 @@ import {
   StarIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import Logo from "../assets/logo.png";
+import Logo from "../assets/logo.webp";
 
 // eslint-disable-next-line react/prop-types
 const Header = ({ onFeaturedClick }) => {

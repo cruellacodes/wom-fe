@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from "react";
 import ApexCharts from "react-apexcharts";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
-import { motion } from "framer-motion";
 
 const TIME_FILTERS = {
   "24h": 86400000,
@@ -167,11 +166,11 @@ const TokenSentimentChart = ({ tokens = [], tweets = [] }) => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7 }}
-      className="pt-10 px-2 sm:px-6 w-full min-h-[500px]"
+    <div 
+      className="pt-10 px-2 sm:px-6 w-full min-h-[500px] opacity-0 animate-fadeIn"
+      style={{
+        animation: "fadeIn 0.7s ease-out forwards"
+      }}
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold tracking-wide uppercase text-[#38bdf8]">
@@ -215,7 +214,20 @@ const TokenSentimentChart = ({ tokens = [], tweets = [] }) => {
         Sentiment distribution (0–100 WOM score)
         {filter === "24h" ? " (past 24h)" : filter === "12h" ? " (past 12h)" : " (past 6h)"}
       </p>
-    </motion.div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </div>
   );
 };
 

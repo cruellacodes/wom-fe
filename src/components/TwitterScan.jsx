@@ -1,27 +1,77 @@
+/* eslint-disable react/prop-types */
 // TwitterScan.jsx
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect, useRef } from "react";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";  // Replace html2canvas with html-to-image
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-} from "chart.js";
+// Removed Chart.js dependencies for lighter bundle
 import {
   XMarkIcon,
   MagnifyingGlassIcon,
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/solid";
 import { supabase } from "../lib/supabaseClient";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo.webp";
 import { fetchTopActiveTokensByTweetCount } from "../utils/fetchTopActiveTokensByTweetCount";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
+// Simple SVG Bar Chart Component
+const SimpleBarChart = ({ data, labels }) => {
+  const maxValue = Math.max(...data);
+  const chartHeight = 180;
+  const chartWidth = 300;
+  const barWidth = chartWidth / data.length - 8;
+  
+  return (
+    <div className="w-full h-[180px] flex items-end justify-center bg-[#0f0f0f] rounded p-3">
+      <svg width={chartWidth} height={chartHeight} className="overflow-visible">
+        {data.map((value, i) => {
+          const barHeight = maxValue > 0 ? (value / maxValue) * (chartHeight - 40) : 0;
+          const x = i * (barWidth + 8);
+          
+          return (
+            <g key={i}>
+              {/* Bar */}
+              <rect
+                x={x}
+                y={chartHeight - barHeight - 30}
+                width={barWidth}
+                height={barHeight}
+                fill="rgba(255, 77, 255, 0.6)"
+                rx={3}
+                className="transition-all duration-500 hover:fill-[rgba(255,77,255,0.8)]"
+              />
+              {/* Label */}
+              <text
+                x={x + barWidth / 2}
+                y={chartHeight - 10}
+                textAnchor="middle"
+                fill="#EAEAEA"
+                fontSize="11"
+                className="font-mono"
+              >
+                {labels[i]}
+              </text>
+              {/* Value on hover */}
+              {value > 0 && (
+                <text
+                  x={x + barWidth / 2}
+                  y={chartHeight - barHeight - 35}
+                  textAnchor="middle"
+                  fill="#FF4DFF"
+                  fontSize="10"
+                  className="font-mono opacity-0 hover:opacity-100 transition-opacity"
+                >
+                  {value}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
 
 const WATCHLIST_KEY = "twitterScanWatchlist";
 const TRENDING_LOADED_KEY = "twitterScanTrendingLoaded";
@@ -360,40 +410,55 @@ const TwitterScan = () => {
       const button = cardEl.querySelector("button[title='Download card']");
       if (button) button.style.visibility = "hidden";
 
-      const canvas = await html2canvas(cardEl, {
+      // Use html-to-image instead of html2canvas
+      const dataUrl = await toPng(cardEl, {
         backgroundColor: null,
-        useCORS: true,
+        quality: 1.0,
+        pixelRatio: 2, // Higher resolution
       });
 
-      const ctx = canvas.getContext("2d");
-      const watermark = new Image();
-      watermark.src = logo;
-      watermark.crossOrigin = "anonymous";
-      await new Promise((resolve, reject) => {
-        watermark.onload = resolve;
-        watermark.onerror = reject;
-      });
+      // Create a canvas to add watermark
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Create image from dataUrl
+      const img = new Image();
+      img.onload = () => {
+        // Set canvas size to match image
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Draw the main image
+        ctx.drawImage(img, 0, 0);
+        
+        // Add watermark
+        const watermark = new Image();
+        watermark.src = logo;
+        watermark.onload = () => {
+          const padding = 12;
+          const scale = 0.25;
+          const w = watermark.width * scale;
+          const h = watermark.height * scale;
 
-      const padding = 12;
-      const scale = 0.25;
-      const w = watermark.width * scale;
-      const h = watermark.height * scale;
+          ctx.drawImage(
+            watermark,
+            canvas.width - w - padding,
+            canvas.height - h - padding,
+            w,
+            h
+          );
 
-      ctx.drawImage(
-        watermark,
-        canvas.width - w - padding,
-        canvas.height - h - padding,
-        w,
-        h
-      );
+          // Download the final image
+          const finalDataUrl = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = finalDataUrl;
+          link.download = `${token}-twittercard.png`;
+          link.click();
+        };
+      };
+      img.src = dataUrl;
 
       if (button) button.style.visibility = "visible";
-
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `${token}-twittercard.png`;
-      link.click();
     } catch (err) {
       console.error("Image capture failed:", err);
     }
@@ -518,34 +583,9 @@ const TwitterScan = () => {
                     ))}
                   </ul>
 
-                  <Bar
-                    data={{
-                      labels: ["1h", "3h", "6h", "12h", "24h", "48h"],
-                      datasets: [
-                        {
-                          label: "Tweet Volume",
-                          data: history,
-                          backgroundColor: "rgba(255, 77, 255, 0.5)",
-                          borderRadius: 6,
-                        },
-                      ],
-                    }}
-                    options={{
-                      plugins: { legend: { display: false } },
-                      responsive: true,
-                      animation: { duration: 800, easing: "easeOutQuart" },
-                      scales: {
-                        x: {
-                          ticks: { color: "#EAEAEA" },
-                          grid: { color: "#222" },
-                        },
-                        y: {
-                          ticks: { color: "#EAEAEA" },
-                          grid: { color: "#222" },
-                        },
-                      },
-                    }}
-                    height={180}
+                  <SimpleBarChart
+                    data={history}
+                    labels={["1h", "3h", "6h", "12h", "24h", "48h"]}
                   />
                 </div>
               </div>
