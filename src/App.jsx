@@ -24,10 +24,11 @@ import TwitterScan from "./components/TwitterScan";
 import AppLoader from "./components/Loader";
 import ShillerScan from "./components/ShillerScan"
 import StocksAnalyzer from "./components/StocksAnalyzer.jsx"
-import SimpleFeaturedPayment from "./components/FeaturedPayment";
+import GlobalFeaturedModal from "./components/GlobalFeaturedModal";
 
 import { useActiveTokens } from "./hooks/useActiveTokens";
 import { useTokenTweets } from "./hooks/useTokenTweets";
+import { supabase } from "./lib/supabaseClient";
 
 import { getTopTokensByTweetCount, getTopTokensByWomScore } from "./utils";
 
@@ -53,121 +54,6 @@ function ChartToggle({ show, onToggle }) {
   );
 }
 
-const GlobalFeaturedModal = ({ 
-  isOpen, 
-  onClose, 
-  tokens, 
-  featuredTokens, 
-  onSelectToken,
-  selectedToken,
-  onPaymentSuccess 
-}) => {
-  const [showPayment, setShowPayment] = useState(false);
-
-  // Get tokens that aren't already featured
-  const availableTokens = tokens.filter(token => 
-    !featuredTokens.some(ft => 
-      ft.token_symbol === token.token_symbol &&
-      ft.featured_until &&
-      new Date(ft.featured_until) > new Date()
-    )
-  ).slice(0, 20); // Show top 20 for selection
-
-  // Reset when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setShowPayment(false);
-      onSelectToken(null);
-    }
-  }, [isOpen, onSelectToken]);
-
-  if (!isOpen) return null;
-
-  // Show payment modal if token is selected
-  if (showPayment && selectedToken) {
-    return (
-      <SimpleFeaturedPayment
-        isOpen={true}
-        onClose={() => {
-          setShowPayment(false);
-          onSelectToken(null);
-          onClose();
-        }}
-        userToken={selectedToken}
-        onPaymentSuccess={onPaymentSuccess}
-      />
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0A0F0A] border border-[#1b1b1b] rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden relative shadow-2xl">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <div className="text-center mb-6">
-          <div className="text-3xl mb-3">⭐</div>
-          <h3 className="text-2xl font-bold text-green-300 mb-2">
-            Get Featured
-          </h3>
-          <p className="text-gray-400">
-            Select a token to feature in the top 3 spots
-          </p>
-        </div>
-
-        <div className="max-h-96 overflow-y-auto">
-          {availableTokens.length > 0 ? (
-            <div className="space-y-2">
-              {availableTokens.map((token) => (
-                <div
-                  key={token.token_symbol}
-                  onClick={() => {
-                    onSelectToken(token);
-                    setShowPayment(true);
-                  }}
-                  className="flex items-center justify-between p-3 border border-[#2a2a2a] rounded-lg hover:border-green-400/50 hover:bg-green-400/5 cursor-pointer transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    {token.image_url && (
-                      <img
-                        src={token.image_url}
-                        alt={token.token_symbol}
-                        className="w-8 h-8 rounded-full"
-                      />
-                    )}
-                    <div>
-                      <div className="text-white font-medium">
-                        {token.token_symbol?.toUpperCase()}
-                      </div>
-                      <div className="text-gray-400 text-sm">
-                        WOM Score: {token.wom_score}%
-                      </div>
-                    </div>
-                  </div>
-                  <button className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-lg font-medium transition-all transform hover:scale-105">
-                    Select
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-400">
-              <p>No tokens available for featuring.</p>
-              <p className="text-sm mt-2">All tokens may already be featured or none loaded yet.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 function App() {
   // Your existing states
   const [searchedToken, setSearchedToken] = useState(null);
@@ -175,6 +61,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCharts, setShowCharts] = useState(true);
 
+  // NEW: Featured system states
   const [featuredTokens, setFeaturedTokens] = useState([]);
   const [showGlobalFeaturedModal, setShowGlobalFeaturedModal] = useState(false);
   const [selectedTokenForGlobalFeatured, setSelectedTokenForGlobalFeatured] = useState(null);
@@ -191,31 +78,142 @@ function App() {
   const fetchIdRef = useRef(0); 
   const [isTokenInfoLoading, setIsTokenInfoLoading] = useState(false);
 
-  // Load featured tokens from localStorage on startup
+  // NEW: Auto-promotion system
   useEffect(() => {
-    const savedFeatured = localStorage.getItem('featuredTokens');
-    if (savedFeatured) {
-      try {
-        const parsed = JSON.parse(savedFeatured);
-        // Filter out expired ones
-        const validFeatured = parsed.filter(ft => 
-          ft.featured_until && new Date(ft.featured_until) > new Date()
-        );
-        setFeaturedTokens(validFeatured);
-        
-        // Save back the cleaned list if any were expired
-        if (validFeatured.length !== parsed.length) {
-          localStorage.setItem('featuredTokens', JSON.stringify(validFeatured));
-        }
-      } catch (error) {
-        console.error('Error loading featured tokens:', error);
-      }
-    }
+    // Start monitoring for auto-promotions
+    startAutoPromotionSystem();
+    
+    // Load initial featured tokens
+    loadFeaturedTokens();
+
+    // Refresh featured tokens every 30 seconds
+    const refreshInterval = setInterval(loadFeaturedTokens, 30000);
+
+    return () => {
+      clearInterval(refreshInterval);
+    };
   }, []);
 
-  // Save featured tokens to localStorage whenever it changes
+  const startAutoPromotionSystem = () => {
+    // Check for promotions every minute
+    const promotionInterval = setInterval(promoteWaitingTokens, 60000);
+    
+    // Also check immediately
+    promoteWaitingTokens();
+
+    return () => clearInterval(promotionInterval);
+  };
+
+  const promoteWaitingTokens = async () => {
+    try {
+      const now = new Date().toISOString();
+
+      // 1. Mark expired spots as inactive
+      await supabase
+        .from('featured_spots')
+        .update({ is_active: false })
+        .eq('is_active', true)
+        .lt('featured_until', now);
+
+      // 2. Get available spot positions (1-3)
+      const { data: activeSpots } = await supabase
+        .from('featured_spots')
+        .select('spot_position')
+        .eq('is_active', true)
+        .gt('featured_until', now)
+        .not('spot_position', 'is', null);
+
+      const occupiedPositions = new Set(activeSpots?.map(spot => spot.spot_position) || []);
+      const availablePositions = [];
+
+      for (let i = 1; i <= 3; i++) {
+        if (!occupiedPositions.has(i)) {
+          availablePositions.push(i);
+        }
+      }
+
+      // 3. Promote waiting tokens to fill available spots
+      if (availablePositions.length > 0) {
+        const { data: waitingTokens } = await supabase
+          .from('featured_spots')
+          .select('*')
+          .eq('is_active', true)
+          .is('spot_position', null)
+          .order('created_at', { ascending: true }); // First paid, first promoted
+
+        if (waitingTokens?.length > 0) {
+          // Promote tokens to available spots
+          for (let i = 0; i < Math.min(availablePositions.length, waitingTokens.length); i++) {
+            const token = waitingTokens[i];
+            const position = availablePositions[i];
+
+            await supabase
+              .from('featured_spots')
+              .update({ 
+                spot_position: position,
+                featured_at: new Date().toISOString() // Update when actually featured
+              })
+              .eq('id', token.id);
+
+            console.log(`Auto-promoted ${token.token_symbol} to position ${position}`);
+          }
+
+          // Refresh featured tokens after promotions
+          loadFeaturedTokens();
+        }
+      }
+
+    } catch (error) {
+      console.error('Error in auto-promotion system:', error);
+    }
+  };
+
+  const loadFeaturedTokens = async () => {
+    try {
+      const now = new Date().toISOString();
+      
+      const { data: featuredSpots } = await supabase
+        .from('featured_spots')
+        .select('*')
+        .eq('is_active', true)
+        .gt('featured_until', now)
+        .not('spot_position', 'is', null)
+        .order('spot_position', { ascending: true });
+
+      const formattedFeatured = featuredSpots?.map(spot => ({
+        ...spot.token_data,
+        is_featured: true,
+        featured_until: spot.featured_until,
+        featured_duration_hours: spot.duration_hours,
+        featured_price: spot.price_sol,
+        featured_at: spot.featured_at,
+        spot_position: spot.spot_position
+      })) || [];
+
+      setFeaturedTokens(formattedFeatured);
+    } catch (error) {
+      console.error('Error loading featured tokens:', error);
+      // Fallback to localStorage if database fails
+      const savedFeatured = localStorage.getItem('featuredTokens');
+      if (savedFeatured) {
+        try {
+          const parsed = JSON.parse(savedFeatured);
+          const validFeatured = parsed.filter(ft => 
+            ft.featured_until && new Date(ft.featured_until) > new Date()
+          );
+          setFeaturedTokens(validFeatured);
+        } catch (localError) {
+          console.error('Error loading featured tokens from localStorage:', localError);
+        }
+      }
+    }
+  };
+
+  // Save featured tokens to localStorage as backup
   useEffect(() => {
-    localStorage.setItem('featuredTokens', JSON.stringify(featuredTokens));
+    if (featuredTokens.length > 0) {
+      localStorage.setItem('featuredTokens', JSON.stringify(featuredTokens));
+    }
   }, [featuredTokens]);
 
   // Clean up expired featured tokens every minute
@@ -232,7 +230,7 @@ function App() {
     return () => clearInterval(cleanupInterval);
   }, []);
 
-  // andle the "Get Featured" button from header bar
+  // Handle the "Get Featured" button from header bar
   const handleGlobalFeaturedClick = () => {
     if (tokens.length > 0) {
       setShowGlobalFeaturedModal(true);
@@ -241,19 +239,17 @@ function App() {
     }
   };
 
-  // Handle adding a new featured token
-  const handleAddFeaturedToken = (featuredToken) => {
-    setFeaturedTokens(prev => {
-      // Remove any existing featured entry for this token
-      const filtered = prev.filter(ft => ft.token_symbol !== featuredToken.token_symbol);
-      // Add the new one
-      return [...filtered, featuredToken];
-    });
+  // Handle adding a new featured token (refresh from database)
+  const handleAddFeaturedToken = async (paymentData) => {
+    // Refresh the featured tokens list after a successful payment
+    await loadFeaturedTokens();
+    
+    console.log('Token featured successfully:', paymentData);
   };
 
   // Handle successful payment from global modal
   const handleGlobalPaymentSuccess = (paymentData) => {
-    handleAddFeaturedToken(paymentData.token);
+    handleAddFeaturedToken(paymentData);
     setShowGlobalFeaturedModal(false);
     setSelectedTokenForGlobalFeatured(null);
   };
@@ -299,7 +295,7 @@ function App() {
     if (location?.state?.scrollTo === "leaderboard") {
       setTimeout(() => {
         leaderboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100); // small delay to ensure DOM is rendered
+      }, 100);
     }
   
     if (location?.state?.scrollTo === "sentiment") {

@@ -215,8 +215,7 @@ const Header = ({ onFeaturedClick }) => {
             </button>
             
             <div className="hidden md:flex items-center gap-4 text-xs text-yellow-200/80">
-              <span>• From $5 USDC</span>
-              <span>• 3-24 hour options</span>
+              <span>• Launch promo 50% off</span>
               <span>• Instant activation</span>
             </div>
           </div>
