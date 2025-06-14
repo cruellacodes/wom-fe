@@ -32,8 +32,10 @@ const Leaderboard = React.memo(
     const [ageFilter, setAgeFilter] = useState("All");
     const [categoryFilter, setCategoryFilter] = useState("Trending");
     const [showCopyNotification, setShowCopyNotification] = useState(false);
+    const [copiedTokenSymbol, setCopiedTokenSymbol] = useState("");
     
     const TokenSentimentChartRef = useRef(null);
+    const notificationTimeoutRef = useRef(null);
 
     const formatLaunchpadLabel = (value) => {
       const map = {
@@ -64,15 +66,33 @@ const Leaderboard = React.memo(
 
       try {
         await navigator.clipboard.writeText(tokenAddress);
+        
+        // Clear previous timeout if it exists
+        if (notificationTimeoutRef.current) {
+          clearTimeout(notificationTimeoutRef.current);
+        }
+        
+        setCopiedTokenSymbol(token.token_symbol);
         setShowCopyNotification(true);
         
-        setTimeout(() => {
+        // Set new timeout
+        notificationTimeoutRef.current = setTimeout(() => {
           setShowCopyNotification(false);
-        }, 3000);
+          setCopiedTokenSymbol("");
+        }, 2000); // Reduced to 2 seconds
       } catch (err) {
         console.error('Failed to copy token address:', err);
       }
     };
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (notificationTimeoutRef.current) {
+          clearTimeout(notificationTimeoutRef.current);
+        }
+      };
+    }, []);
 
     // Check if a token is currently featured and not expired
     const isTokenFeatured = (token) => {
@@ -147,7 +167,13 @@ const Leaderboard = React.memo(
       const topFeatured = currentFeatured
         .filter(ft => ft.spot_position) // Only those with assigned positions
         .sort((a, b) => a.spot_position - b.spot_position)
-        .slice(0, 3);
+        .slice(0, 3)
+        .map(ft => {
+          // Find the corresponding token from the tokens array
+          const token = tokens.find(t => t.token_symbol === ft.token_symbol);
+          return token ? { ...token, ...ft } : ft;
+        })
+        .filter(token => token.token_symbol); // Only include tokens that exist
 
       // Regular tokens (excluding those that are featured)
       const regularTokens = tokens.filter(token => 
@@ -209,6 +235,272 @@ const Leaderboard = React.memo(
         : <span className="text-green-400">↑</span>;
     };
 
+    // Component for rendering token row content
+    const renderTokenRow = (token, index, isMobile = false) => {
+      const featuredData = isTokenFeatured(token);
+      const isFeatured = !!featuredData;
+      const remainingTime = featuredData ? getRemainingTime(featuredData.featured_until) : null;
+      const isTopThreeFeatured = isFeatured && index < 3;
+
+      const tokenTdClass = isMobile
+        ? "sticky left-0 z-10 bg-[#0a0a0a] px-2 py-3 text-left font-medium text-white border-r border-[#1f1f1f] w-[120px]"
+        : "px-3 py-3 text-left font-medium text-white";
+
+      return (
+        <tr
+          key={`${isMobile ? 'mobile' : 'desktop'}-${token.token_symbol}`}
+          onClick={() => onTokenClick(token)}
+          className={`border-b border-[#1f1f1f] hover:bg-green-900/10 transition cursor-pointer ${
+            isTopThreeFeatured 
+              ? 'bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border-yellow-600/30' 
+              : ''
+          }`}
+        >
+          {!isMobile && (
+            /* Chain column - only show on desktop */
+            <td className="px-2 py-3 text-center">
+              <img src={solanaIcon} alt="Solana" className="w-5 h-5 mx-auto" />
+            </td>
+          )}
+
+          {/* Token column */}
+          <td className={tokenTdClass}>
+            {isMobile ? (
+              /* Mobile: Ultra compact layout */
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-1">
+                  {isTopThreeFeatured ? (
+                    <StarIcon className="w-3 h-3 text-yellow-400 animate-pulse flex-shrink-0" />
+                  ) : (
+                    token.first_spotted_by && (
+                      <span className="text-yellow-300 text-[6px] font-bold px-0.5 py-0.5 rounded-sm bg-yellow-400/10">⚡</span>
+                    )
+                  )}
+                  {token.image_url && (
+                    <img
+                      src={token.image_url}
+                      alt={token.token_symbol}
+                      className="w-3 h-3 rounded-full border border-green-800 flex-shrink-0"
+                    />
+                  )}
+                  <span className="font-medium text-[11px] truncate">
+                    {token.token_symbol?.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  {token.dex_url && (
+                    <>
+                      <a
+                        href={token.dex_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-green-300"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ChartBarIcon className="w-2.5 h-2.5" />
+                      </a>
+                      <button
+                        onClick={(e) => copyTokenAddress(token, e)}
+                        className="hover:text-green-300 transition-all duration-200"
+                        title="Copy token address"
+                      >
+                        <ClipboardIcon className="w-2.5 h-2.5" />
+                      </button>
+                    </>
+                  )}
+                  {token.launchpad && token.launchpad !== "unknown" && (
+                    <span
+                      className={`text-[8px] px-1 py-0.5 rounded-full font-medium ${
+                        token.launchpad.toLowerCase() === "pumpfun"
+                          ? "bg-[#90fcb3] text-[#0f1f17]"
+                          : token.launchpad.toLowerCase() === "bonk"
+                          ? "bg-[#f7f700] text-black"
+                          : token.launchpad.toLowerCase() === "boop"
+                          ? "bg-[#90caff] text-[#0a0f1a]"
+                          : token.launchpad.toLowerCase() === "believe"
+                          ? "bg-[#00FF00] text-black"
+                          : "bg-purple-900 text-purple-300"
+                      }`}
+                    >
+                      {formatLaunchpadLabel(token.launchpad)}
+                    </span>
+                  )}
+                  {isTopThreeFeatured && (
+                    <span className="text-[8px] px-1 py-0.5 rounded-full font-medium bg-gradient-to-r from-yellow-600 to-orange-600 text-white">
+                      FEAT
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Desktop: Original layout */
+              <div className="flex items-center gap-2">
+                {/* Lightning/Star icon */}
+                <div className="w-8 flex justify-center">
+                  {isTopThreeFeatured ? (
+                    <div className="relative group flex justify-center">
+                      <StarIcon className="w-5 h-5 text-yellow-400 animate-pulse" />
+                      <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
+                        <div className="whitespace-nowrap">Featured spot #{index + 1}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    token.first_spotted_by && (
+                      <div className="relative group flex justify-center">
+                        <span 
+                          className="animate-pulse bg-yellow-400/10 text-yellow-300 text-[8px] font-bold px-1 py-0.5 rounded-sm uppercase cursor-pointer hover:bg-yellow-400/20 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`https://x.com/${token.first_spotted_by}`, '_blank');
+                          }}
+                        >
+                          ⚡
+                        </span>
+                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max min-w-[180px] max-w-[220px] px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
+                          <div className="whitespace-nowrap">First spotted by @{token.first_spotted_by}</div>
+                          <div className="text-gray-400 whitespace-nowrap">Click to view profile</div>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {token.image_url && (
+                  <img
+                    src={token.image_url}
+                    alt={token.token_symbol}
+                    className="w-5 h-5 rounded-full border border-green-800"
+                  />
+                )}
+
+                <span className="flex items-center gap-1">
+                  {token.token_symbol?.toUpperCase()}
+                  {token.dex_url && (
+                    <>
+                      <a
+                        href={token.dex_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-green-300"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ChartBarIcon className="w-4 h-4" />
+                      </a>
+                      <button
+                        onClick={(e) => copyTokenAddress(token, e)}
+                        className="group relative hover:text-green-300 transition-all duration-200 p-1.5 rounded-md hover:bg-green-900/20 cursor-pointer"
+                        title="Copy token address"
+                      >
+                        <ClipboardIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                  {token.launchpad && token.launchpad !== "unknown" && (
+                    <span
+                      className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        token.launchpad.toLowerCase() === "pumpfun"
+                          ? "bg-[#90fcb3] text-[#0f1f17]"
+                          : token.launchpad.toLowerCase() === "bonk"
+                          ? "bg-[#f7f700] text-black"
+                          : token.launchpad.toLowerCase() === "boop"
+                          ? "bg-[#90caff] text-[#0a0f1a]"
+                          : token.launchpad.toLowerCase() === "believe"
+                          ? "bg-[#00FF00] text-black"
+                          : "bg-purple-900 text-purple-300"
+                      }`}
+                    >
+                      {formatLaunchpadLabel(token.launchpad)}
+                    </span>
+                  )}
+                  {/* Featured badge */}
+                  {isTopThreeFeatured && (
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-gradient-to-r from-yellow-600 to-orange-600 text-white animate-pulse">
+                      FEATURED
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+          </td>
+
+          {/* WOM Score column */}
+          <td className="px-3 py-3 text-center">
+            {isMobile ? (
+              <div className="flex flex-col items-center gap-1">
+                <div className="relative w-8 h-1 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
+                  <div
+                    className={`h-full ${getBatteryColor(token.wom_score ?? 0)}`}
+                    style={{ width: `${token.wom_score ?? 0}%` }}
+                  />
+                </div>
+                <span className="text-[9px] font-semibold text-white">
+                  {token.wom_score != null ? `${token.wom_score}%` : "—"}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <div className="relative w-16 h-2 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
+                  <div
+                    className={`h-full ${getBatteryColor(token.wom_score ?? 0)}`}
+                    style={{ width: `${token.wom_score ?? 0}%` }}
+                  />
+                </div>
+                <span className="text-xs font-semibold text-white whitespace-nowrap">
+                  {token.wom_score != null ? `${token.wom_score}%` : "—"}
+                </span>
+              </div>
+            )}
+          </td>
+
+          {/* Whispers column */}
+          <td className="px-3 py-3 text-center text-white text-sm">
+            <span className={isMobile ? "text-[10px]" : ""}>
+              {typeof token.avg_followers_count === "number"
+                ? safeFormatNumber(token.avg_followers_count)
+                : "—"}
+            </span>
+          </td>
+
+          {/* Market Cap column */}
+          <td className="px-3 py-3 text-center">
+            <span className={isMobile ? "text-[10px]" : ""}>
+              {safeFormatNumber(token.market_cap_usd)}
+            </span>
+          </td>
+
+          {/* Age column */}
+          <td className="px-3 py-3 text-center">
+            <span className={isMobile ? "text-[10px]" : ""}>
+              {token.age ?? "—"}
+            </span>
+          </td>
+
+          {/* Volume column */}
+          <td className="px-3 py-3 text-center">
+            <span className={isMobile ? "text-[10px]" : ""}>
+              {safeFormatNumber(token.volume_usd)}
+            </span>
+          </td>
+
+          {/* Liquidity column */}
+          <td className="px-3 py-3 text-center">
+            <span className={isMobile ? "text-[10px]" : ""}>
+              {safeFormatNumber(token.liquidity_usd)}
+            </span>
+          </td>
+
+          {/* Time column - only show data for featured tokens, no header title */}
+          <td className="px-3 py-3 text-center">
+            {isTopThreeFeatured && remainingTime && (
+              <div className={`text-yellow-400 font-medium whitespace-nowrap ${isMobile ? "text-[9px]" : "text-xs"}`}>
+                {remainingTime}
+              </div>
+            )}
+          </td>
+        </tr>
+      );
+    };
+
     return (
       <div className="p-6">
         {/* Success Notification */}
@@ -221,7 +513,9 @@ const Leaderboard = React.memo(
             </div>
             <div className="flex-1">
               <p className="font-semibold text-sm text-green-50">Success!</p>
-              <p className="text-xs text-green-100/80">Address copied to clipboard</p>
+              <p className="text-xs text-green-100/80">
+                {copiedTokenSymbol} address copied to clipboard
+              </p>
             </div>
             <div className="w-1 h-8 bg-gradient-to-b from-green-400 to-emerald-400 rounded-full"></div>
           </div>
@@ -304,292 +598,231 @@ const Leaderboard = React.memo(
           </div>
         </div>
     
-        {/* Table - Removed overflow-x-auto and min-width to prevent horizontal scrolling */}
+        {/* Table - Mobile responsive with horizontal scroll only on mobile */}
         <div className="rounded-xl border border-[#1f1f1f] overflow-hidden w-full">
-          <table className="w-full text-sm text-gray-200">
-            <thead className="sticky top-0 z-10">
-              <tr className="text-green-300 uppercase text-xs tracking-widest">
-                {/* Chain column */}
-                <th className="px-2 py-3 text-center">Chain</th>
-                
-                {/* Token column */}
-                <th 
-                  className="px-3 py-3 text-left cursor-pointer hover:text-green-400 transition"
-                  onClick={() => handleSort("token_symbol")}
-                >
-                  <div className="flex items-center gap-1 ml-10">
-                    <span>Token</span>
-                    {renderSortArrow("token_symbol")}
-                  </div>
-                </th>
-                
-                {/* WOM Score column */}
-                <th 
-                  className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
-                  onClick={() => handleSort("wom_score")}
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    <span>WOM Score</span>
-                    {renderSortArrow("wom_score")}
-                  </div>
-                </th>
-                
-                {/* Whispers column */}
-                <th 
-                  className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
-                  onClick={() => handleSort("avg_followers_count")}
-                >
-                  <div className="flex items-center justify-center gap-1 text-xs whitespace-nowrap uppercase">
-                    <span>Whispers</span>
-                    <div className="relative group flex items-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-[13px] h-[13px] text-gray-400 hover:text-green-300 transition"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
-                        />
-                      </svg>
-                      <div className="absolute left-full top-full mt-2 ml-2 z-50 w-[220px] px-3 py-2 text-[12px] text-gray-200 bg-[#0a0a0a] border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none leading-snug text-left normal-case whitespace-normal">
-                        <p className="text-gray-100 font-medium mb-1">Whispers score</p>
-                        <p>Measures how small the average tweeting account is.</p>
-                        <p className="text-gray-400">Lower = earlier whispers.</p>
-                      </div>
+          {/* Mobile version with horizontal scroll and sticky columns */}
+          <div className="block md:hidden overflow-x-auto">
+            <table className="w-full text-sm text-gray-200 min-w-[800px]">
+              <thead className="sticky top-0 z-10 bg-[#0a0a0a]">
+                <tr className="text-green-300 uppercase text-xs tracking-widest">
+                  {/* Token column - sticky on mobile, much narrower */}
+                  <th 
+                    className="sticky left-0 z-20 bg-[#0a0a0a] px-2 py-3 text-left cursor-pointer hover:text-green-400 transition border-r border-[#1f1f1f] w-[120px]"
+                    onClick={() => handleSort("token_symbol")}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px]">Token</span>
+                      {renderSortArrow("token_symbol")}
                     </div>
-                    {renderSortArrow("avg_followers_count")}
-                  </div>
-                </th>
-                
-                {/* Market Cap column */}
-                <th 
-                  className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
-                  onClick={() => handleSort("market_cap_usd")}
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    <span className="whitespace-nowrap">Market Cap</span>
-                    {renderSortArrow("market_cap_usd")}
-                  </div>
-                </th>
-                
-                {/* Age column */}
-                <th 
-                  className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
-                  onClick={() => handleSort("age")}
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    <span>Age</span>
-                    {renderSortArrow("age")}
-                  </div>
-                </th>
-                
-                {/* Volume column */}
-                <th 
-                  className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
-                  onClick={() => handleSort("volume_usd")}
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    <span>Volume</span>
-                    {renderSortArrow("volume_usd")}
-                  </div>
-                </th>
-                
-                {/* Liquidity column */}
-                <th 
-                  className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
-                  onClick={() => handleSort("liquidity_usd")}
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    <span>Liquidity</span>
-                    {renderSortArrow("liquidity_usd")}
-                  </div>
-                </th>
-                
-                {/* Time column - no title, just empty header */}
-                <th className="px-3 py-3 text-center"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedTokens.length > 0 ? (
-                pagedTokens.map((token, index) => {
-                  // Check if this token is featured
-                  const featuredData = isTokenFeatured(token);
-                  const isFeatured = !!featuredData;
-                  const remainingTime = featuredData ? getRemainingTime(featuredData.featured_until) : null;
-                  const isTopThreeFeatured = isFeatured && index < 3;
-
-                  return (
-                    <tr
-                      key={token.token_symbol}
-                      onClick={() => onTokenClick(token)}
-                      className={`border-b border-[#1f1f1f] hover:bg-green-900/10 transition cursor-pointer ${
-                        isTopThreeFeatured 
-                          ? 'bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border-yellow-600/30' 
-                          : ''
-                      }`}
-                    >
-                      {/* Chain column */}
-                      <td className="px-2 py-3 text-center">
-                        <img src={solanaIcon} alt="Solana" className="w-5 h-5 mx-auto" />
-                      </td>
-
-                      {/* Token column */}
-                      <td className="px-3 py-3 text-left font-medium text-white">
-                        <div className="flex items-center gap-2">
-                          {/* Lightning/Star icon */}
-                          <div className="w-8 flex justify-center">
-                            {isTopThreeFeatured ? (
-                              <div className="relative group flex justify-center">
-                                <StarIcon className="w-5 h-5 text-yellow-400 animate-pulse" />
-                                <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
-                                  <div className="whitespace-nowrap">Featured spot #{index + 1}</div>
-                                </div>
-                              </div>
-                            ) : (
-                              token.first_spotted_by && (
-                                <div className="relative group flex justify-center">
-                                  <span 
-                                    className="animate-pulse bg-yellow-400/10 text-yellow-300 text-[8px] font-bold px-1 py-0.5 rounded-sm uppercase cursor-pointer hover:bg-yellow-400/20 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.open(`https://x.com/${token.first_spotted_by}`, '_blank');
-                                    }}
-                                  >
-                                    ⚡
-                                  </span>
-                                  <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-1 w-max min-w-[180px] max-w-[220px] px-3 py-2 text-xs text-white bg-black border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 pointer-events-none text-center">
-                                    <div className="whitespace-nowrap">First spotted by @{token.first_spotted_by}</div>
-                                    <div className="text-gray-400 whitespace-nowrap">Click to view profile</div>
-                                  </div>
-                                </div>
-                              )
-                            )}
-                          </div>
-
-                          {token.image_url && (
-                            <img
-                              src={token.image_url}
-                              alt={token.token_symbol}
-                              className="w-5 h-5 rounded-full border border-green-800"
-                            />
-                          )}
-
-                          <span className="flex items-center gap-1">
-                            {token.token_symbol?.toUpperCase()}
-                            {token.dex_url && (
-                              <>
-                                <a
-                                  href={token.dex_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:text-green-300"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <ChartBarIcon className="w-4 h-4" />
-                                </a>
-                                <button
-                                  onClick={(e) => copyTokenAddress(token, e)}
-                                  className="group relative hover:text-green-300 transition-all duration-200 p-1.5 rounded-md hover:bg-green-900/20 cursor-pointer"
-                                  title="Copy token address"
-                                >
-                                  <ClipboardIcon className="w-3.5 h-3.5" />
-                                </button>
-                              </>
-                            )}
-                            {token.launchpad && token.launchpad !== "unknown" && (
-                              <span
-                                className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  token.launchpad.toLowerCase() === "pumpfun"
-                                    ? "bg-[#90fcb3] text-[#0f1f17]"
-                                    : token.launchpad.toLowerCase() === "bonk"
-                                    ? "bg-[#f7f700] text-black"
-                                    : token.launchpad.toLowerCase() === "boop"
-                                    ? "bg-[#90caff] text-[#0a0f1a]"
-                                    : token.launchpad.toLowerCase() === "believe"
-                                    ? "bg-[#00FF00] text-black"
-                                    : "bg-purple-900 text-purple-300"
-                                }`}
-                              >
-                                {formatLaunchpadLabel(token.launchpad)}
-                              </span>
-                            )}
-                            {/* Featured badge */}
-                            {isTopThreeFeatured && (
-                              <span className="ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-gradient-to-r from-yellow-600 to-orange-600 text-white animate-pulse">
-                                FEATURED
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </td>
-        
-                      {/* WOM Score column */}
-                      <td className="px-3 py-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="relative w-16 h-2 rounded-full bg-gray-800 overflow-hidden border border-gray-700">
-                            <div
-                              className={`h-full ${getBatteryColor(token.wom_score ?? 0)}`}
-                              style={{ width: `${token.wom_score ?? 0}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-semibold text-white whitespace-nowrap">
-                            {token.wom_score != null ? `${token.wom_score}%` : "—"}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Whispers column */}
-                      <td className="px-3 py-3 text-center text-white text-sm">
-                        {typeof token.avg_followers_count === "number"
-                          ? safeFormatNumber(token.avg_followers_count)
-                          : "—"}
-                      </td>
-        
-                      {/* Market Cap column */}
-                      <td className="px-3 py-3 text-center">
-                        {safeFormatNumber(token.market_cap_usd)}
-                      </td>
-        
-                      {/* Age column */}
-                      <td className="px-3 py-3 text-center">
-                        {token.age ?? "—"}
-                      </td>
-        
-                      {/* Volume column */}
-                      <td className="px-3 py-3 text-center">
-                        {safeFormatNumber(token.volume_usd)}
-                      </td>
-        
-                      {/* Liquidity column */}
-                      <td className="px-3 py-3 text-center">
-                        {safeFormatNumber(token.liquidity_usd)}
-                      </td>
-
-                      {/* Time column - only show data for featured tokens, no header title */}
-                      <td className="px-3 py-3 text-center">
-                        {isTopThreeFeatured && remainingTime && (
-                          <div className="text-xs text-yellow-400 font-medium whitespace-nowrap">
-                            {remainingTime}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9} className="text-center py-10 text-green-400">
-                    No tokens match this filter.
-                  </td>
+                  </th>
+                  
+                  {/* WOM Score column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition w-[100px]"
+                    onClick={() => handleSort("wom_score")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-[10px]">WOM</span>
+                      {renderSortArrow("wom_score")}
+                    </div>
+                  </th>
+                  
+                  {/* Whispers column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition w-[80px]"
+                    onClick={() => handleSort("avg_followers_count")}
+                  >
+                    <div className="flex items-center justify-center gap-1 text-xs whitespace-nowrap uppercase">
+                      <span className="text-[10px]">Whispers</span>
+                      {renderSortArrow("avg_followers_count")}
+                    </div>
+                  </th>
+                  
+                  {/* Market Cap column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition w-[90px]"
+                    onClick={() => handleSort("market_cap_usd")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="whitespace-nowrap text-[10px]">M.Cap</span>
+                      {renderSortArrow("market_cap_usd")}
+                    </div>
+                  </th>
+                  
+                  {/* Age column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition w-[60px]"
+                    onClick={() => handleSort("age")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-[10px]">Age</span>
+                      {renderSortArrow("age")}
+                    </div>
+                  </th>
+                  
+                  {/* Volume column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition w-[80px]"
+                    onClick={() => handleSort("volume_usd")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-[10px]">Vol</span>
+                      {renderSortArrow("volume_usd")}
+                    </div>
+                  </th>
+                  
+                  {/* Liquidity column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition w-[80px]"
+                    onClick={() => handleSort("liquidity_usd")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-[10px]">Liq</span>
+                      {renderSortArrow("liquidity_usd")}
+                    </div>
+                  </th>
+                  
+                  {/* Time column - no title, just empty header */}
+                  <th className="px-3 py-3 text-center w-[60px]"></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {pagedTokens.length > 0 ? (
+                  pagedTokens.map((token, index) => renderTokenRow(token, index, true))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="text-center py-10 text-green-400">
+                      No tokens match this filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Desktop version - no horizontal scroll, original layout */}
+          <div className="hidden md:block">
+            <table className="w-full text-sm text-gray-200">
+              <thead className="sticky top-0 z-10">
+                <tr className="text-green-300 uppercase text-xs tracking-widest">
+                  {/* Chain column */}
+                  <th className="px-2 py-3 text-center">Chain</th>
+                  
+                  {/* Token column */}
+                  <th 
+                    className="px-3 py-3 text-left cursor-pointer hover:text-green-400 transition"
+                    onClick={() => handleSort("token_symbol")}
+                  >
+                    <div className="flex items-center gap-1 ml-10">
+                      <span>Token</span>
+                      {renderSortArrow("token_symbol")}
+                    </div>
+                  </th>
+                  
+                  {/* WOM Score column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
+                    onClick={() => handleSort("wom_score")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>WOM Score</span>
+                      {renderSortArrow("wom_score")}
+                    </div>
+                  </th>
+                  
+                  {/* Whispers column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
+                    onClick={() => handleSort("avg_followers_count")}
+                  >
+                    <div className="flex items-center justify-center gap-1 text-xs whitespace-nowrap uppercase">
+                      <span>Whispers</span>
+                      <div className="relative group flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-[13px] h-[13px] text-gray-400 hover:text-green-300 transition"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
+                          />
+                        </svg>
+                        <div className="absolute left-full top-full mt-2 ml-2 z-50 w-[220px] px-3 py-2 text-[12px] text-gray-200 bg-[#0a0a0a] border border-gray-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none leading-snug text-left normal-case whitespace-normal">
+                          <p className="text-gray-100 font-medium mb-1">Whispers score</p>
+                          <p>Measures how small the average tweeting account is.</p>
+                          <p className="text-gray-400">Lower = earlier whispers.</p>
+                        </div>
+                      </div>
+                      {renderSortArrow("avg_followers_count")}
+                    </div>
+                  </th>
+                  
+                  {/* Market Cap column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
+                    onClick={() => handleSort("market_cap_usd")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="whitespace-nowrap">Market Cap</span>
+                      {renderSortArrow("market_cap_usd")}
+                    </div>
+                  </th>
+                  
+                  {/* Age column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
+                    onClick={() => handleSort("age")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Age</span>
+                      {renderSortArrow("age")}
+                    </div>
+                  </th>
+                  
+                  {/* Volume column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
+                    onClick={() => handleSort("volume_usd")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Volume</span>
+                      {renderSortArrow("volume_usd")}
+                    </div>
+                  </th>
+                  
+                  {/* Liquidity column */}
+                  <th 
+                    className="px-3 py-3 text-center cursor-pointer hover:text-green-400 transition"
+                    onClick={() => handleSort("liquidity_usd")}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Liquidity</span>
+                      {renderSortArrow("liquidity_usd")}
+                    </div>
+                  </th>
+                  
+                  {/* Time column - no title, just empty header */}
+                  <th className="px-3 py-3 text-center"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedTokens.length > 0 ? (
+                  pagedTokens.map((token, index) => renderTokenRow(token, index, false))
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="text-center py-10 text-green-400">
+                      No tokens match this filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
     
         {/* Pagination */}

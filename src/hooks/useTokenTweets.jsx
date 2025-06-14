@@ -50,9 +50,8 @@ export function useTokenTweets() {
         ({ new: newTweet }) => {
           const tweetTimeUTC = new Date(newTweet.created_at).getTime();
           const now = Date.now();
-          const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
-
-          if (tweetTimeUTC >= twentyFourHoursAgo && tweetTimeUTC <= now) {
+          const fortyEightHoursAgo = now - 48 * 60 * 60 * 1000; 
+          if (tweetTimeUTC >= fortyEightHoursAgo && tweetTimeUTC <= now) {
             setTweets((prev) => {
               const alreadyExists = prev.some((t) => t.id === newTweet.id);
               return alreadyExists ? prev : [...prev, newTweet];
@@ -61,7 +60,7 @@ export function useTokenTweets() {
         }
       )
       .subscribe();
-
+  
     return () => {
       supabase.removeChannel(channel);
     };
