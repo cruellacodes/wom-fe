@@ -17,6 +17,7 @@ const TweetScatterChart = ({ searchedToken, tweets, isFetchingTweets, isAnalyzin
 
   const zoomLevels = useMemo(
     () => [
+      { label: "48h", range: [now - 48 * 60 * 60 * 1000, now] },
       { label: "24h", range: [now - 24 * 60 * 60 * 1000, now] },
       { label: "6h", range: [now - 6 * 60 * 60 * 1000, now] },
       { label: "1h", range: [now - 1 * 60 * 60 * 1000, now] },
