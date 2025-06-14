@@ -21,7 +21,7 @@ const SimpleFeaturedPayment = ({ isOpen, onClose, userToken, onPaymentSuccess })
     { 
       hours: 3, 
       originalPrice: 1.6, 
-      price: 0.80, 
+      price: 0.01, 
       label: '3 hours', 
       popular: false,
       discountPercent: 50

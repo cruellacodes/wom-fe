@@ -23,6 +23,7 @@ const GlobalFeaturedModal = ({
   const [isSearching, setIsSearching] = useState(false);
   const [waitingForAddress, setWaitingForAddress] = useState(false);
   const [lastSymbolAttempt, setLastSymbolAttempt] = useState('');
+  const [isTokenFromAPI, setIsTokenFromAPI] = useState(false); // Track if token is from API
   
   const suggestionRefs = useRef([]);
   const searchIdRef = useRef(0);
@@ -80,6 +81,7 @@ const GlobalFeaturedModal = ({
       setIsSearching(false);
       setWaitingForAddress(false);
       setLastSymbolAttempt('');
+      setIsTokenFromAPI(false);
     }
   }, [isOpen]);
 
@@ -87,6 +89,46 @@ const GlobalFeaturedModal = ({
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search-token/${input}`);
     if (!res.ok) throw new Error("Token not found");
     return await res.json();
+  };
+
+  // NEW: Function to add token to database after successful payment
+  const addTokenToDatabase = async (tokenData) => {
+    try {
+      console.log('Adding token to database:', tokenData.token_symbol);
+      
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/add-manual-tokens`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token_symbol: tokenData.token_symbol,
+          address: tokenData.address,
+          // Include other necessary data
+          token_name: tokenData.token_name,
+          market_cap_usd: tokenData.market_cap_usd,
+          volume_usd: tokenData.volume_usd,
+          liquidity_usd: tokenData.liquidity_usd,
+          priceUsd: tokenData.priceUsd,
+          dex_url: tokenData.dex_url,
+          image_url: tokenData.image_url,
+          age: tokenData.age,
+          pricechange1h: tokenData.pricechange1h
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to add token: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✓ Token added to database successfully:', result);
+      return result;
+
+    } catch (error) {
+      console.error('Failed to add token to database:', error);
+      throw error;
+    }
   };
 
   const handleSearch = async (input = searchQuery) => {
@@ -103,7 +145,7 @@ const GlobalFeaturedModal = ({
     );
 
     if (match) {
-      handleTokenSelect(match);
+      handleTokenSelect(match, false); // false = not from API
       return;
     }
 
@@ -131,12 +173,12 @@ const GlobalFeaturedModal = ({
           dex_url: tokenData.dexUrl || "#",
           pricechange1h: tokenData.priceChange1h || 0,
           image_url: tokenData.imageUrl || solanaIcon,
-          wom_score: 0, // Will be calculated later
+          wom_score: 0, // Will be calculated after adding to DB
         };
 
         if (searchIdRef.current !== currentId) return;
         
-        handleTokenSelect(fetchedToken);
+        handleTokenSelect(fetchedToken, true); // true = from API
         setSearchQuery('');
         setSuggestions([]);
         setWaitingForAddress(false);
@@ -183,21 +225,65 @@ const GlobalFeaturedModal = ({
     }
   };
 
-  const handleTokenSelect = (token) => {
+  // UPDATED: Track if token is from API
+  const handleTokenSelect = (token, fromAPI = false) => {
     setCurrentToken(token);
+    setIsTokenFromAPI(fromAPI);
     onSelectToken?.(token);
     setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = (paymentData) => {
-    setShowPaymentModal(false);
-    setCurrentToken(null);
-    onPaymentSuccess?.(paymentData);
+  // UPDATED: Handle payment success with database addition and waiting queue
+  const handlePaymentSuccess = async (paymentData) => {
+    try {
+      // If token was fetched from API, add it to database first
+      if (isTokenFromAPI && currentToken) {
+        console.log('Payment successful for API token, adding to database...');
+        
+        // Show loading state or notification here if needed
+        await addTokenToDatabase(currentToken);
+        
+        console.log('✓ Token successfully added to database and tweet pipeline triggered');
+      }
+
+      // Check if all spots are full to determine if this goes to waiting queue
+      const spotsAvailable = 3 - featuredTokens.length;
+      const isWaitingQueue = spotsAvailable <= 0;
+      
+      if (isWaitingQueue) {
+        console.log('All spots full - token will be added to waiting queue');
+        // The payment component should handle this by setting spot_position to null
+        // which puts it in the waiting queue for auto-promotion
+      } else {
+        console.log(`Token will be featured immediately in spot ${spotsAvailable}`);
+      }
+      
+      // Close modals and reset state
+      setShowPaymentModal(false);
+      setCurrentToken(null);
+      setIsTokenFromAPI(false);
+      
+      // Call the parent success handler
+      onPaymentSuccess?.(paymentData);
+      
+    } catch (error) {
+      console.error('Error in payment success flow:', error);
+      
+      // Still close the modals and notify parent, even if DB addition failed
+      setShowPaymentModal(false);
+      setCurrentToken(null);
+      setIsTokenFromAPI(false);
+      onPaymentSuccess?.(paymentData);
+      
+      // You might want to show an error message to the user here
+      alert('Payment successful but failed to add token to database. Please contact support.');
+    }
   };
 
   const handlePaymentClose = () => {
     setShowPaymentModal(false);
     setCurrentToken(null);
+    setIsTokenFromAPI(false);
   };
 
   const handleClear = () => {
@@ -244,9 +330,21 @@ const GlobalFeaturedModal = ({
             <h2 className="text-xl font-bold text-green-300 mb-2">
               ⭐ Feature Token
             </h2>
-            <p className="text-gray-400 text-sm">
-              {3 - featuredTokens.length} spot{(3 - featuredTokens.length) !== 1 ? 's' : ''} available
-            </p>
+            {featuredTokens.length < 3 ? (
+              <p className="text-gray-400 text-sm">
+                {3 - featuredTokens.length} spot{(3 - featuredTokens.length) !== 1 ? 's' : ''} available
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-900/20 border border-orange-500/30 rounded-full">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                  <span className="text-orange-300 text-sm font-medium">All Spots Currently Full</span>
+                </div>
+                <p className="text-gray-400 text-xs">
+                  Pay now and your token will be automatically featured when the next spot opens!
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Search Bar - Cleaner design */}
@@ -304,7 +402,7 @@ const GlobalFeaturedModal = ({
                   <div
                     key={token.address}
                     ref={(el) => (suggestionRefs.current[idx] = el)}
-                    onClick={() => handleTokenSelect(token)}
+                    onClick={() => handleTokenSelect(token, false)}
                     className={`
                       cursor-pointer p-3 rounded-lg transition-all duration-200 border
                       hover:border-green-400/40 hover:bg-green-400/5
@@ -376,6 +474,7 @@ const GlobalFeaturedModal = ({
           onClose={handlePaymentClose}
           userToken={currentToken}
           onPaymentSuccess={handlePaymentSuccess}
+          isTokenFromAPI={isTokenFromAPI} 
         />
       )}
     </>
