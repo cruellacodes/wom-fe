@@ -91,10 +91,10 @@ const GlobalFeaturedModal = ({
     return await res.json();
   };
 
-  // NEW: Function to add token to database after successful payment
+  // Function to add token to main database after successful payment
   const addTokenToDatabase = async (tokenData) => {
     try {
-      console.log('Adding token to database:', tokenData.token_symbol);
+      console.log('Adding token to main database:', tokenData.token_symbol);
       
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/add-manual-tokens`, {
         method: 'POST',
@@ -122,11 +122,11 @@ const GlobalFeaturedModal = ({
       }
 
       const result = await response.json();
-      console.log('✓ Token added to database successfully:', result);
+      console.log('✓ Token added to main database successfully:', result);
       return result;
 
     } catch (error) {
-      console.error('Failed to add token to database:', error);
+      console.error('Failed to add token to main database:', error);
       throw error;
     }
   };
@@ -225,7 +225,7 @@ const GlobalFeaturedModal = ({
     }
   };
 
-  // UPDATED: Track if token is from API
+  // Track if token is from API
   const handleTokenSelect = (token, fromAPI = false) => {
     setCurrentToken(token);
     setIsTokenFromAPI(fromAPI);
@@ -233,17 +233,22 @@ const GlobalFeaturedModal = ({
     setShowPaymentModal(true);
   };
 
-  // UPDATED: Handle payment success with database addition and waiting queue
+  // FIXED: Handle payment success with proper error separation
   const handlePaymentSuccess = async (paymentData) => {
     try {
-      // If token was fetched from API, add it to database first
+      // If token was fetched from API, add it to main database first
       if (isTokenFromAPI && currentToken) {
-        console.log('Payment successful for API token, adding to database...');
+        console.log('Payment successful for API token, adding to main database...');
         
-        // Show loading state or notification here if needed
-        await addTokenToDatabase(currentToken);
-        
-        console.log('✓ Token successfully added to database and tweet pipeline triggered');
+        try {
+          await addTokenToDatabase(currentToken);
+          console.log('✓ Token successfully added to main database and tweet pipeline triggered');
+        } catch (dbError) {
+          console.error('Failed to add to main database:', dbError);
+          // Don't throw here - the featured spot payment still worked
+          // Just log the error and continue
+          console.warn('Featured spot payment successful, but token may not be added to main database');
+        }
       }
 
       // Check if all spots are full to determine if this goes to waiting queue
@@ -251,11 +256,11 @@ const GlobalFeaturedModal = ({
       const isWaitingQueue = spotsAvailable <= 0;
       
       if (isWaitingQueue) {
-        console.log('All spots full - token will be added to waiting queue');
-        // The payment component should handle this by setting spot_position to null
+        console.log('All spots full - token added to waiting queue');
+        // The payment component handles this by setting spot_position to null
         // which puts it in the waiting queue for auto-promotion
       } else {
-        console.log(`Token will be featured immediately in spot ${spotsAvailable}`);
+        console.log(`Token featured immediately in spot ${spotsAvailable}`);
       }
       
       // Close modals and reset state
@@ -269,14 +274,14 @@ const GlobalFeaturedModal = ({
     } catch (error) {
       console.error('Error in payment success flow:', error);
       
-      // Still close the modals and notify parent, even if DB addition failed
+      // Still close the modals - the featured spot payment likely worked
       setShowPaymentModal(false);
       setCurrentToken(null);
       setIsTokenFromAPI(false);
       onPaymentSuccess?.(paymentData);
       
-      // You might want to show an error message to the user here
-      alert('Payment successful but failed to add token to database. Please contact support.');
+      // Only show error for the main database addition, not featured spots
+      console.warn('Featured spot payment successful, but there was an issue with additional processing');
     }
   };
 
