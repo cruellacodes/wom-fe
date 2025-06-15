@@ -48,7 +48,7 @@ const TweetScatterChart = ({ searchedToken, tweets, isFetchingTweets, isAnalyzin
       text: tweet.text,
       username: tweet.user_name,
       profilePic: tweet.profile_pic || "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
-      tweetUrl: `https://x.com/${tweet.user_name}/status/${tweet.tweet_id}`,
+      tweetUrl: tweet.tweet_url,
     }));
   }, [recentTweets]);
 
